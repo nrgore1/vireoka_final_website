@@ -1,6 +1,12 @@
-const buckets = new Map<string, { count: number; ts: number }>();
+type Bucket = { count: number; ts: number };
 
-export function rateLimit(key: string, limit = 30, windowMs = 60000) {
+const buckets = new Map<string, Bucket>();
+
+export function rateLimit(
+  key: string,
+  limit = 30,
+  windowMs = 60_000
+): boolean {
   const now = Date.now();
   const b = buckets.get(key);
 
@@ -10,6 +16,17 @@ export function rateLimit(key: string, limit = 30, windowMs = 60000) {
   }
 
   if (b.count >= limit) return false;
+
   b.count++;
   return true;
+}
+
+export function rateLimitOrThrow(
+  key: string,
+  limit = 30,
+  windowMs = 60_000
+) {
+  if (!rateLimit(key, limit, windowMs)) {
+    throw new Error("RATE_LIMITED");
+  }
 }
