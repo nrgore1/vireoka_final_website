@@ -8,7 +8,7 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request) {
-  // Rate limit (Phase-1: string key only)
+  // Rate limit
   const ip =
     req.headers.get("x-forwarded-for") ??
     req.headers.get("x-real-ip") ??
@@ -25,14 +25,16 @@ export async function POST(req: Request) {
     );
   }
 
-  // Password check happens inside signAdminSession
-  const token = await signAdminSession(parsed.data.password);
-  if (!token) {
+  // Phase-1 admin password check (env-based)
+  if (parsed.data.password !== process.env.ADMIN_PASSWORD) {
     return NextResponse.json(
       { ok: false, error: "Unauthorized" },
       { status: 401 }
     );
   }
+
+  // Issue session (no args)
+  const token = await signAdminSession();
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set(adminCookieName(), token, {
