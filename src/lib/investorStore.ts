@@ -6,16 +6,13 @@ import { supabase } from "./supabase";
 
 export type InvestorStatus =
   | "PENDING_APPROVAL"
+  | "PENDING_NDA"
   | "APPROVED"
   | "REJECTED"
   | "EXPIRED";
 
-export type RevocationReason =
-  | "ADMIN_REVOKE"
-  | "SECURITY";
-
 /* =======================
-   Core Investor Ops
+   Core
 ======================= */
 
 export async function createOrGetInvestor(input: {
@@ -47,22 +44,60 @@ export async function getInvestorByEmail(email: string) {
   return data;
 }
 
-export async function listInvestors() {
-  const { data } = await supabase.from("investors").select("*");
-  return data ?? [];
-}
-
 /* =======================
-   State Transitions
+   NDA
 ======================= */
 
-export async function approveInvestor(email: string, ttlDays = 30) {
-  const expiresAt = new Date(Date.now() + ttlDays * 86400000).toISOString();
-
+export async function acceptNda(email: string) {
   const { data } = await supabase
     .from("investors")
     .update({
       status: "APPROVED",
+      nda_accepted_at: new Date().toISOString(),
+    })
+    .eq("email", email)
+    .select()
+    .single();
+
+  await audit(email, "NDA_ACCEPTED");
+  return data;
+}
+
+/* =======================
+   Expiry (Phase-1 inline)
+======================= */
+
+export async function expireIfNeeded(investor: any) {
+  if (!investor?.expires_at) return investor;
+
+  if (new Date(investor.expires_at) < new Date()) {
+    const { data } = await supabase
+      .from("investors")
+      .update({ status: "EXPIRED" })
+      .eq("email", investor.email)
+      .select()
+      .single();
+
+    await audit(investor.email, "EXPIRED");
+    return data;
+  }
+
+  return investor;
+}
+
+/* =======================
+   Admin
+======================= */
+
+export async function approveInvestor(email: string, ttlDays = 30) {
+  const expiresAt = new Date(
+    Date.now() + ttlDays * 86400000
+  ).toISOString();
+
+  const { data } = await supabase
+    .from("investors")
+    .update({
+      status: "PENDING_NDA",
       approved_at: new Date().toISOString(),
       expires_at: expiresAt,
     })
@@ -74,10 +109,7 @@ export async function approveInvestor(email: string, ttlDays = 30) {
   return data;
 }
 
-export async function revokeInvestor(
-  email: string,
-  reason: RevocationReason = "ADMIN_REVOKE"
-) {
+export async function revokeInvestor(email: string) {
   const { data } = await supabase
     .from("investors")
     .update({ status: "REJECTED" })
@@ -85,12 +117,12 @@ export async function revokeInvestor(
     .select()
     .single();
 
-  await audit(email, "REVOKED", { reason });
+  await audit(email, "REVOKED");
   return data;
 }
 
 /* =======================
-   Audit Log
+   Audit
 ======================= */
 
 export async function audit(
