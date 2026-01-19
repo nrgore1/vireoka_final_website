@@ -44,6 +44,15 @@ export async function getInvestorByEmail(email: string) {
   return data;
 }
 
+export async function listInvestors() {
+  const { data } = await supabase
+    .from("investors")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  return data ?? [];
+}
+
 /* =======================
    NDA
 ======================= */
