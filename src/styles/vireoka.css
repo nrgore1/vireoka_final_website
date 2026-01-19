@@ -1,0 +1,82 @@
+:root{
+  /* Vireoka palette (adjust anytime, WP port will mirror these tokens) */
+  --vk-bg: #070A0F;
+  --vk-surface: #0C1220;
+  --vk-card: #0E1629;
+  --vk-border: rgba(255,255,255,0.10);
+
+  --vk-text: rgba(255,255,255,0.92);
+  --vk-muted: rgba(255,255,255,0.68);
+
+  --vk-primary: #6AE4FF;     /* Vireoka Cyan */
+  --vk-primary-2: #7C5CFF;   /* Vireoka Violet */
+  --vk-accent: #2EE59D;      /* Trust green */
+  --vk-warn: #FFB020;
+  --vk-danger: #FF4D6D;
+
+  --vk-radius: 16px;
+  --vk-radius-lg: 22px;
+  --vk-shadow: 0 12px 40px rgba(0,0,0,0.45);
+
+  --vk-max: 1120px;
+}
+
+.vk-container{
+  max-width: var(--vk-max);
+  margin: 0 auto;
+  padding: 0 18px;
+}
+
+.vk-card{
+  border: 1px solid var(--vk-border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border-radius: var(--vk-radius-lg);
+  box-shadow: var(--vk-shadow);
+}
+
+.vk-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--vk-border);
+  color: var(--vk-muted);
+  background: rgba(255,255,255,0.03);
+  font-size: 12px;
+}
+
+.vk-link{
+  color: var(--vk-primary);
+  text-decoration: none;
+}
+.vk-link:hover{ text-decoration: underline; }
+
+.vk-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--vk-border);
+  background: rgba(255,255,255,0.06);
+  color: var(--vk-text);
+  text-decoration: none;
+  transition: transform .12s ease, background .12s ease;
+}
+.vk-btn:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.09);
+}
+.vk-btn-primary{
+  border-color: rgba(106, 228, 255, 0.35);
+  background: linear-gradient(90deg, rgba(106,228,255,0.22), rgba(124,92,255,0.18));
+}
+
+.vk-hr{
+  height:1px;
+  width:100%;
+  background: var(--vk-border);
+  border:0;
+}
