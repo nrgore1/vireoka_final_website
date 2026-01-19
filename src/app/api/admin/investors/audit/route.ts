@@ -4,13 +4,23 @@ import { requireAdmin } from "@/lib/adminGuard";
 import { rateLimitOrThrow } from "@/lib/rateLimit";
 
 export async function GET(req: Request) {
-  // Defense-in-depth: auth + rate limit in route too
-  const ok = await requireAdmin(req);
-  if (!ok) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  // Auth
+  requireAdmin(req);
 
-  const limited = rateLimitOrThrow(req, { keyPrefix: "admin:audit", max: 120, windowMs: 60_000 });
-  if (limited) return limited;
+  // Rate limit (Phase-1: simple key-based)
+  const ip =
+    req.headers.get("x-forwarded-for") ??
+    req.headers.get("x-real-ip") ??
+    "local";
 
+  const key = `admin:audit:${ip}`;
+  rateLimitOrThrow(key, 120, 60_000);
+
+  // Fetch audit log
   const rows = await listAuditLog();
-  return NextResponse.json({ ok: true, audit: rows });
+
+  return NextResponse.json({
+    ok: true,
+    rows,
+  });
 }
