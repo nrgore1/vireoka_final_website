@@ -1,27 +1,35 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { expireIfNeeded, getInvestorByEmail } from "@/lib/investorStore";
+import {
+  getInvestorByEmail,
+  expireIfNeeded,
+} from "@/lib/investorStore";
 
-const Schema = z.object({ email: z.string().email() });
+const Schema = z.object({
+  email: z.string().email(),
+});
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
+  const body = await req.json();
   const parsed = Schema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ ok: false }, { status: 400 });
 
-  const rec0 = getInvestorByEmail(parsed.data.email);
-  if (!rec0) return NextResponse.json({ ok: true, exists: false });
+  if (!parsed.success) {
+    return NextResponse.json(
+      { ok: false, error: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
 
-  const rec = expireIfNeeded(parsed.data.email);
+  const investor = await getInvestorByEmail(parsed.data.email);
+  if (!investor) {
+    return NextResponse.json({ ok: true, exists: false });
+  }
+
+  const finalInvestor = await expireIfNeeded(investor);
+
   return NextResponse.json({
     ok: true,
     exists: true,
-    investor: {
-      email: rec.email,
-      status: rec.status,
-      ndaAcceptedAt: rec.ndaAcceptedAt,
-      approvedAt: rec.approvedAt,
-      expiresAt: rec.expiresAt,
-    },
+    investor: finalInvestor,
   });
 }

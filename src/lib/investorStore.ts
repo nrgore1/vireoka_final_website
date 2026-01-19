@@ -1,199 +1,259 @@
-import Database from "better-sqlite3";
-import { nanoid } from "nanoid";
+import { sendEmail } from "@/lib/email";
 
-export type InvestorStatus = "PENDING_NDA" | "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "EXPIRED";
+export type InvestorStatus =
+  | "PENDING_APPROVAL"
+  | "PENDING_NDA"
+  | "APPROVED"
+  | "REJECTED"
+  | "EXPIRED"
+  | "REVOKED";
 
-export type InvestorRecord = {
-  id: string;
+export type InvestorApplicationInput = {
   email: string;
   name: string;
   org: string;
   role: string;
   intent: string;
-  status: InvestorStatus;
-  ndaAcceptedAt: string | null;
-  approvedAt: string | null;
-  expiresAt: string | null;
-  createdAt: string;
-  updatedAt: string;
 };
+
+export type Investor = {
+  email: string;
+  status: InvestorStatus;
+  ndaAcceptedAt?: string;
+  approvedAt?: string;
+  expiresAt?: string;
+  deletedAt?: string;
+};
+
+export type InvestorAuditAction =
+  | "APPLIED"
+  | "NDA_ACCEPTED"
+  | "APPROVED"
+  | "REJECTED"
+  | "REVOKED"
+  | "RESTORED"
+  | "SOFT_DELETED";
+
+export type InvestorAuditEvent = {
+  email: string;
+  action: InvestorAuditAction;
+  at: string;
+  meta?: Record<string, any>;
+};
+
+// In-memory stores
+const investors = new Map<string, Investor>();
+const auditLog: InvestorAuditEvent[] = [];
 
 function nowIso() {
   return new Date().toISOString();
 }
 
-function getDbPath() {
-  return process.env.INVESTOR_DB_PATH || ".data/investors.sqlite";
+async function recordAudit(e: InvestorAuditEvent) {
+  auditLog.unshift(e);
 }
 
-let _db: Database.Database | null = null;
-
-function db() {
-  if (_db) return _db;
-  const path = getDbPath();
-  // ensure parent dir exists
-  const dir = path.split("/").slice(0, -1).join("/") || ".";
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  require("fs").mkdirSync(dir, { recursive: true });
-
-  _db = new Database(path);
-  _db.pragma("journal_mode = WAL");
-  _db.exec(`
-    CREATE TABLE IF NOT EXISTS investors (
-      id TEXT PRIMARY KEY,
-      email TEXT NOT NULL UNIQUE,
-      name TEXT NOT NULL,
-      org TEXT NOT NULL,
-      role TEXT NOT NULL,
-      intent TEXT NOT NULL,
-      status TEXT NOT NULL,
-      ndaAcceptedAt TEXT,
-      approvedAt TEXT,
-      expiresAt TEXT,
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_investors_status ON investors(status);
-  `);
-  return _db;
+export async function listAuditLog() {
+  return auditLog;
 }
 
-export function createOrGetInvestor(input: {
-  email: string;
-  name: string;
-  org: string;
-  role: string;
-  intent: string;
-}): InvestorRecord {
-  const d = db();
-  const existing = d
-    .prepare("SELECT * FROM investors WHERE email = ?")
-    .get(input.email) as InvestorRecord | undefined;
+export async function createOrGetInvestor(input: InvestorApplicationInput): Promise<Investor> {
+  const email = input.email.trim().toLowerCase();
+  const existing = investors.get(email);
 
+  // Never downgrade status; keep deletedAt if present
   if (existing) return existing;
 
-  const id = nanoid();
-  const ts = nowIso();
-
-  const rec: InvestorRecord = {
-    id,
-    email: input.email.trim().toLowerCase(),
-    name: input.name.trim(),
-    org: input.org.trim(),
-    role: input.role.trim(),
-    intent: input.intent.trim(),
+  const rec: Investor = {
+    email,
     status: "PENDING_NDA",
-    ndaAcceptedAt: null,
-    approvedAt: null,
-    expiresAt: null,
-    createdAt: ts,
-    updatedAt: ts,
   };
 
-  d.prepare(`
-    INSERT INTO investors (id,email,name,org,role,intent,status,ndaAcceptedAt,approvedAt,expiresAt,createdAt,updatedAt)
-    VALUES (@id,@email,@name,@org,@role,@intent,@status,@ndaAcceptedAt,@approvedAt,@expiresAt,@createdAt,@updatedAt)
-  `).run(rec);
+  investors.set(email, rec);
+  await recordAudit({ email, action: "APPLIED", at: nowIso(), meta: { org: input.org, role: input.role } });
 
   return rec;
 }
 
-export function getInvestorByEmail(email: string): InvestorRecord | null {
-  const d = db();
-  const rec = d.prepare("SELECT * FROM investors WHERE email = ?").get(email.trim().toLowerCase()) as InvestorRecord | undefined;
-  return rec || null;
+export async function getInvestorByEmail(email: string): Promise<Investor | null> {
+  const e = email.trim().toLowerCase();
+  return investors.get(e) || null;
 }
 
-export function getInvestorById(id: string): InvestorRecord | null {
-  const d = db();
-  const rec = d.prepare("SELECT * FROM investors WHERE id = ?").get(id) as InvestorRecord | undefined;
-  return rec || null;
+export async function listInvestors(opts?: { includeDeleted?: boolean }): Promise<Investor[]> {
+  const includeDeleted = !!opts?.includeDeleted;
+  const all = Array.from(investors.values());
+  return includeDeleted ? all : all.filter((x) => !x.deletedAt);
 }
 
-export function acceptNda(email: string): InvestorRecord {
-  const d = db();
-  const rec = getInvestorByEmail(email);
-  if (!rec) throw new Error("Investor not found");
+export async function acceptNda(email: string): Promise<Investor> {
+  const e = email.trim().toLowerCase();
+  const cur = investors.get(e) || { email: e, status: "PENDING_NDA" as const };
 
-  // If already beyond NDA stage, keep status as-is.
-  const nextStatus: InvestorStatus =
-    rec.status === "PENDING_NDA" ? "PENDING_APPROVAL" : rec.status;
+  const next: Investor = {
+    ...cur,
+    status: "PENDING_APPROVAL",
+    ndaAcceptedAt: nowIso(),
+  };
 
-  const ts = nowIso();
-  d.prepare(`
-    UPDATE investors
-    SET ndaAcceptedAt = COALESCE(ndaAcceptedAt, ?),
-        status = ?,
-        updatedAt = ?
-    WHERE email = ?
-  `).run(ts, nextStatus, ts, email.trim().toLowerCase());
+  investors.set(e, next);
+  await recordAudit({ email: e, action: "NDA_ACCEPTED", at: nowIso() });
 
-  return getInvestorByEmail(email)!;
+  return next;
 }
 
-export function approveInvestor(email: string, ttlDays: number): InvestorRecord {
-  const d = db();
-  const rec = getInvestorByEmail(email);
-  if (!rec) throw new Error("Investor not found");
+export async function expireIfNeeded(investor: Investor): Promise<Investor> {
+  if (!investor.expiresAt) return investor;
 
-  if (rec.status === "PENDING_NDA") {
-    throw new Error("NDA not accepted yet");
+  const expired = new Date(investor.expiresAt).getTime() < Date.now();
+  if (!expired) return investor;
+
+  const next = { ...investor, status: "EXPIRED" as const };
+  investors.set(next.email, next);
+  return next;
+}
+
+export async function approveInvestor(email: string, ttlDays?: number): Promise<Investor> {
+  const e = email.trim().toLowerCase();
+  const ttl = typeof ttlDays === "number" && ttlDays > 0 ? ttlDays : 30;
+
+  const cur = investors.get(e) || { email: e, status: "PENDING_APPROVAL" as const };
+
+  const next: Investor = {
+    ...cur,
+    status: "APPROVED",
+    approvedAt: nowIso(),
+    expiresAt: new Date(Date.now() + ttl * 24 * 60 * 60 * 1000).toISOString(),
+  };
+
+  investors.set(e, next);
+  await recordAudit({ email: e, action: "APPROVED", at: nowIso(), meta: { ttlDays: ttl } });
+
+  // Best-effort email (won't fail the request)
+  sendEmail({
+    to: e,
+    subject: "Vireoka — Investor access approved",
+    text: "Your investor access has been approved. You can now use the investor portal on this device.",
+  }).catch(() => {});
+
+  return next;
+}
+
+export async function rejectInvestor(email: string): Promise<Investor> {
+  const e = email.trim().toLowerCase();
+  const cur = investors.get(e) || { email: e, status: "PENDING_APPROVAL" as const };
+
+  const next: Investor = { ...cur, status: "REJECTED" };
+
+  investors.set(e, next);
+  await recordAudit({ email: e, action: "REJECTED", at: nowIso() });
+
+  sendEmail({
+    to: e,
+    subject: "Vireoka — Investor access update",
+    text: "Thanks for your interest. Your investor access request is not approved at this time.",
+  }).catch(() => {});
+
+  return next;
+}
+
+export async function revokeInvestor(email: string, reason?: string): Promise<Investor> {
+  const e = email.trim().toLowerCase();
+  const cur = investors.get(e);
+  if (!cur) {
+    const created: Investor = { email: e, status: "REVOKED" };
+    investors.set(e, created);
+    await recordAudit({ email: e, action: "REVOKED", at: nowIso(), meta: { reason } });
+    return created;
   }
 
-  const ts = nowIso();
-  const expires = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString();
+  const next: Investor = {
+    ...cur,
+    status: "REVOKED",
+    expiresAt: new Date(Date.now() - 60_000).toISOString(),
+  };
 
-  d.prepare(`
-    UPDATE investors
-    SET status = 'APPROVED',
-        approvedAt = ?,
-        expiresAt = ?,
-        updatedAt = ?
-    WHERE email = ?
-  `).run(ts, expires, ts, email.trim().toLowerCase());
+  investors.set(e, next);
+  await recordAudit({ email: e, action: "REVOKED", at: nowIso(), meta: { reason } });
 
-  return getInvestorByEmail(email)!;
+  sendEmail({
+    to: e,
+    subject: "Vireoka — Investor access revoked",
+    text: "Your investor access has been revoked. If you believe this is an error, please contact support.",
+  }).catch(() => {});
+
+  return next;
 }
 
-export function rejectInvestor(email: string): InvestorRecord {
-  const d = db();
-  const rec = getInvestorByEmail(email);
-  if (!rec) throw new Error("Investor not found");
+export async function restoreInvestor(email: string): Promise<Investor> {
+  const e = email.trim().toLowerCase();
+  const cur = investors.get(e) || { email: e, status: "PENDING_APPROVAL" as const };
 
-  const ts = nowIso();
-  d.prepare(`
-    UPDATE investors
-    SET status = 'REJECTED',
-        updatedAt = ?
-    WHERE email = ?
-  `).run(ts, email.trim().toLowerCase());
+  // Restore to a safe state (pending approval) unless it was approved and still has expiry in future
+  const next: Investor = {
+    ...cur,
+    status: "PENDING_APPROVAL",
+    deletedAt: undefined,
+  };
 
-  return getInvestorByEmail(email)!;
+  investors.set(e, next);
+  await recordAudit({ email: e, action: "RESTORED", at: nowIso() });
+
+  return next;
 }
 
-export function expireIfNeeded(email: string): InvestorRecord {
-  const d = db();
-  const rec = getInvestorByEmail(email);
-  if (!rec) throw new Error("Investor not found");
+export async function softDeleteInvestor(email: string): Promise<Investor> {
+  const e = email.trim().toLowerCase();
+  const cur = investors.get(e) || { email: e, status: "REVOKED" as const };
 
-  if (rec.status === "APPROVED" && rec.expiresAt) {
-    const exp = new Date(rec.expiresAt).getTime();
-    if (Date.now() > exp) {
-      const ts = nowIso();
-      d.prepare(`
-        UPDATE investors
-        SET status = 'EXPIRED',
-            updatedAt = ?
-        WHERE email = ?
-      `).run(ts, email.trim().toLowerCase());
-    }
-  }
+  const next: Investor = {
+    ...cur,
+    status: "REVOKED",
+    deletedAt: nowIso(),
+  };
 
-  return getInvestorByEmail(email)!;
+  investors.set(e, next);
+  await recordAudit({ email: e, action: "SOFT_DELETED", at: nowIso() });
+
+  return next;
 }
 
-export function listInvestors(): InvestorRecord[] {
-  const d = db();
-  const rows = d.prepare("SELECT * FROM investors ORDER BY createdAt DESC").all() as InvestorRecord[];
-  return rows;
+export type RevocationReason =
+  | "ADMIN_REVOKE"
+  | "EXPIRED"
+  | "SECURITY";
+
+export async function revokeInvestor(
+  email: string,
+  reason: RevocationReason = "ADMIN_REVOKE"
+): Promise<Investor> {
+  const rec = {
+    email,
+    status: "REJECTED" as const,
+    revokedAt: new Date().toISOString(),
+    revokeReason: reason,
+  };
+
+  await recordAudit({
+    email,
+    action: "REVOKED",
+    at: new Date().toISOString(),
+    meta: { reason },
+  });
+
+  return rec;
+}
+import { sendEmail } from "./email";
+
+async function notify(email: string, subject: string, text: string) {
+  await sendEmail({ to: email, subject, text });
+}
+import { notifyApproved, notifyRevoked } from "./investorNotifications";
+
+export type InvestorPreferences = {
+  emailNotifications: boolean;
+};
+
+export function defaultPreferences(): InvestorPreferences {
+  return { emailNotifications: true };
 }

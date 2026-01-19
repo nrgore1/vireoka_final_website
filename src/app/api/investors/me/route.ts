@@ -1,23 +1,42 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { investorCookieName, verifyInvestorSession } from "@/lib/investorSession";
-import { expireIfNeeded } from "@/lib/investorStore";
+import {
+  investorCookieName,
+  verifyInvestorSession,
+} from "@/lib/investorSession";
+import {
+  getInvestorByEmail,
+  expireIfNeeded,
+} from "@/lib/investorStore";
 
 export async function GET() {
-  const token = cookies().get(investorCookieName())?.value;
-  if (!token) return NextResponse.json({ ok: false, error: "no_session" }, { status: 401 });
+  const cookieStore = await cookies();
+  const token = cookieStore.get(investorCookieName())?.value;
 
-  const sess = await verifyInvestorSession(token);
-  if (!sess) return NextResponse.json({ ok: false, error: "bad_session" }, { status: 401 });
+  if (!token) {
+    return NextResponse.json({ ok: false });
+  }
 
-  const rec = expireIfNeeded(sess.email);
+  const valid = await verifyInvestorSession(token);
+  if (!valid) {
+    return NextResponse.json({ ok: false });
+  }
+
+  // Extract email from token: email:timestamp:hmac
+  const email = token.split(":")[0];
+  if (!email) {
+    return NextResponse.json({ ok: false });
+  }
+
+  const investor = await getInvestorByEmail(email);
+  if (!investor) {
+    return NextResponse.json({ ok: false });
+  }
+
+  const finalInvestor = await expireIfNeeded(investor);
 
   return NextResponse.json({
     ok: true,
-    investor: {
-      email: rec.email,
-      status: rec.status,
-      expiresAt: rec.expiresAt,
-    },
+    investor: finalInvestor,
   });
 }

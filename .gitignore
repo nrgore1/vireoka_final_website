@@ -40,7 +40,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+<<<<<<< HEAD
 # Local env
 .env
 .env.local
 .env.*.local
+=======
+/src/generated/prisma
+>>>>>>> 1b2e5da (Release one of Vireoka is ready to go)

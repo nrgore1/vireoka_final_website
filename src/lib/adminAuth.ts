@@ -1,10 +1,14 @@
-export function requireAdminToken(token: string | null) {
-  const expected = process.env.VIREOKA_ADMIN_TOKEN;
-  if (!expected) throw new Error("VIREOKA_ADMIN_TOKEN not set");
-  if (!token || token !== expected) {
-    const err = new Error("Unauthorized");
-    // @ts-expect-error attach status
-    err.status = 401;
-    throw err;
+/**
+ * Verify admin token.
+ * Returns true if authorized, false otherwise.
+ */
+export async function requireAdminToken(token: string): Promise<boolean> {
+  const expected = process.env.ADMIN_API_TOKEN;
+
+  if (!expected) {
+    // Fail closed in production, open in local dev
+    return process.env.NODE_ENV !== "production";
   }
+
+  return token === expected;
 }

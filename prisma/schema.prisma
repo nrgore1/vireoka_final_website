@@ -1,0 +1,23 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Investor {
+  email        String   @id
+  status       String
+  approvedAt   DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+}
+
+model InvestorAudit {
+  id        Int      @id @default(autoincrement())
+  email     String
+  action    String
+  at        DateTime @default(now())
+}

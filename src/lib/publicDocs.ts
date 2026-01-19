@@ -1,16 +1,6 @@
-import fs from "fs";
-import path from "path";
+import { promises as fs } from "fs";
 
-/**
- * Reads a markdown file from the public docs directory.
- * Safe for server components only.
- */
-export async function readPublicDoc(relativePath: string): Promise<string> {
-  const fullPath = path.join(process.cwd(), "public", relativePath);
-
-  if (!fs.existsSync(fullPath)) {
-    throw new Error(`Public document not found: ${relativePath}`);
-  }
-
-  return fs.readFileSync(fullPath, "utf8");
+export async function readPublicDoc(path: string): Promise<string> {
+  // Public docs only. Do NOT use this for NDA-gated docs.
+  return await fs.readFile(path, "utf8");
 }
