@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { sendEmail } from "./email";
 
 /* =======================
    Types
@@ -30,6 +31,11 @@ export async function createOrGetInvestor(input: {
     )
     .select()
     .single();
+
+  await audit(input.email, "APPLIED", {
+    org: input.org,
+    role: input.role,
+  });
 
   return data;
 }
@@ -69,11 +75,13 @@ export async function acceptNda(email: string) {
     .single();
 
   await audit(email, "NDA_ACCEPTED");
+  await notify(email, "NDA accepted", "Thank you for accepting the NDA.");
+
   return data;
 }
 
 /* =======================
-   Expiry (Phase-1 inline)
+   Expiry (inline check)
 ======================= */
 
 export async function expireIfNeeded(investor: any) {
@@ -115,6 +123,12 @@ export async function approveInvestor(email: string, ttlDays = 30) {
     .single();
 
   await audit(email, "APPROVED", { ttlDays });
+  await notify(
+    email,
+    "Investor access approved",
+    "Your access is approved. Please accept the NDA to proceed."
+  );
+
   return data;
 }
 
@@ -127,6 +141,12 @@ export async function revokeInvestor(email: string) {
     .single();
 
   await audit(email, "REVOKED");
+  await notify(
+    email,
+    "Investor access revoked",
+    "Your access was revoked."
+  );
+
   return data;
 }
 
@@ -153,4 +173,29 @@ export async function listAuditLog() {
     .order("created_at", { ascending: false });
 
   return data ?? [];
+}
+
+/* =======================
+   Email notifications
+======================= */
+
+async function emailNotificationsEnabled(email: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("investor_preferences")
+    .select("email_notifications")
+    .eq("email", email)
+    .single();
+
+  if (!data) return true;
+  return data.email_notifications !== false;
+}
+
+export async function notify(
+  email: string,
+  subject: string,
+  text: string
+) {
+  const enabled = await emailNotificationsEnabled(email);
+  if (!enabled) return { ok: true, skipped: true };
+  return sendEmail({ to: email, subject, text });
 }

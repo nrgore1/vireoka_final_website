@@ -2,6 +2,7 @@ import "./globals.css";
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
+import Analytics from "./Analytics";
 
 export const metadata: Metadata = {
   title: "Vireoka — Governable AI for Real-World Accountability",
@@ -55,6 +56,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-white text-vireoka-graphite antialiased">
+        {/* Analytics */}
+        <Analytics />
+
         {/* Header */}
         <header className="border-b border-vireoka-line bg-white">
           <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
