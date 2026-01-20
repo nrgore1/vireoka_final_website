@@ -8,13 +8,16 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request) {
-  // Rate limit
   const ip =
     req.headers.get("x-forwarded-for") ??
     req.headers.get("x-real-ip") ??
     "local";
 
-  rateLimitOrThrow(`admin:login:${ip}`, 20, 60_000);
+  // ✅ Correct signature: key + options object
+  rateLimitOrThrow(`admin:login:${ip}`, {
+    max: 20,
+    windowMs: 60_000,
+  });
 
   const body = await req.json().catch(() => null);
   const parsed = Schema.safeParse(body);
@@ -25,7 +28,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Phase-1 admin password check (env-based)
   if (parsed.data.password !== process.env.ADMIN_PASSWORD) {
     return NextResponse.json(
       { ok: false, error: "Unauthorized" },
@@ -33,7 +35,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Issue session (no args)
   const token = await signAdminSession();
 
   const res = NextResponse.json({ ok: true });
