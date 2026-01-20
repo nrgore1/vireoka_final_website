@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { getSupabase } from "./supabase";
 import { sendEmail } from "./email";
 
 /* =======================
@@ -23,6 +23,8 @@ export async function createOrGetInvestor(input: {
   role: string;
   intent: string;
 }) {
+  const supabase = getSupabase();
+
   const { data } = await supabase
     .from("investors")
     .upsert(
@@ -32,15 +34,12 @@ export async function createOrGetInvestor(input: {
     .select()
     .single();
 
-  await audit(input.email, "APPLIED", {
-    org: input.org,
-    role: input.role,
-  });
-
   return data;
 }
 
 export async function getInvestorByEmail(email: string) {
+  const supabase = getSupabase();
+
   const { data } = await supabase
     .from("investors")
     .select("*")
@@ -51,6 +50,8 @@ export async function getInvestorByEmail(email: string) {
 }
 
 export async function listInvestors() {
+  const supabase = getSupabase();
+
   const { data } = await supabase
     .from("investors")
     .select("*")
@@ -64,6 +65,8 @@ export async function listInvestors() {
 ======================= */
 
 export async function acceptNda(email: string) {
+  const supabase = getSupabase();
+
   const { data } = await supabase
     .from("investors")
     .update({
@@ -75,31 +78,7 @@ export async function acceptNda(email: string) {
     .single();
 
   await audit(email, "NDA_ACCEPTED");
-  await notify(email, "NDA accepted", "Thank you for accepting the NDA.");
-
   return data;
-}
-
-/* =======================
-   Expiry (inline check)
-======================= */
-
-export async function expireIfNeeded(investor: any) {
-  if (!investor?.expires_at) return investor;
-
-  if (new Date(investor.expires_at) < new Date()) {
-    const { data } = await supabase
-      .from("investors")
-      .update({ status: "EXPIRED" })
-      .eq("email", investor.email)
-      .select()
-      .single();
-
-    await audit(investor.email, "EXPIRED");
-    return data;
-  }
-
-  return investor;
 }
 
 /* =======================
@@ -107,6 +86,8 @@ export async function expireIfNeeded(investor: any) {
 ======================= */
 
 export async function approveInvestor(email: string, ttlDays = 30) {
+  const supabase = getSupabase();
+
   const expiresAt = new Date(
     Date.now() + ttlDays * 86400000
   ).toISOString();
@@ -123,16 +104,13 @@ export async function approveInvestor(email: string, ttlDays = 30) {
     .single();
 
   await audit(email, "APPROVED", { ttlDays });
-  await notify(
-    email,
-    "Investor access approved",
-    "Your access is approved. Please accept the NDA to proceed."
-  );
-
+  await notify(email, "Investor access approved", "Your access is approved.");
   return data;
 }
 
 export async function revokeInvestor(email: string) {
+  const supabase = getSupabase();
+
   const { data } = await supabase
     .from("investors")
     .update({ status: "REJECTED" })
@@ -141,12 +119,7 @@ export async function revokeInvestor(email: string) {
     .single();
 
   await audit(email, "REVOKED");
-  await notify(
-    email,
-    "Investor access revoked",
-    "Your access was revoked."
-  );
-
+  await notify(email, "Investor access revoked", "Your access was revoked.");
   return data;
 }
 
@@ -154,11 +127,9 @@ export async function revokeInvestor(email: string) {
    Audit
 ======================= */
 
-export async function audit(
-  email: string,
-  action: string,
-  meta?: any
-) {
+export async function audit(email: string, action: string, meta?: any) {
+  const supabase = getSupabase();
+
   await supabase.from("investor_audit").insert({
     email,
     action,
@@ -167,6 +138,8 @@ export async function audit(
 }
 
 export async function listAuditLog() {
+  const supabase = getSupabase();
+
   const { data } = await supabase
     .from("investor_audit")
     .select("*")
@@ -180,6 +153,8 @@ export async function listAuditLog() {
 ======================= */
 
 async function emailNotificationsEnabled(email: string): Promise<boolean> {
+  const supabase = getSupabase();
+
   const { data } = await supabase
     .from("investor_preferences")
     .select("email_notifications")
@@ -190,11 +165,7 @@ async function emailNotificationsEnabled(email: string): Promise<boolean> {
   return data.email_notifications !== false;
 }
 
-export async function notify(
-  email: string,
-  subject: string,
-  text: string
-) {
+export async function notify(email: string, subject: string, text: string) {
   const enabled = await emailNotificationsEnabled(email);
   if (!enabled) return { ok: true, skipped: true };
   return sendEmail({ to: email, subject, text });

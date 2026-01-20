@@ -8,19 +8,15 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const ip =
-    req.headers.get("x-forwarded-for") ??
-    req.headers.get("x-real-ip") ??
-    "local";
-
-  // ✅ Correct signature: key + options object
-  rateLimitOrThrow(`admin:login:${ip}`, {
+  // ✅ Correct usage: pass Request, not a string key
+  rateLimitOrThrow(req, {
     max: 20,
     windowMs: 60_000,
   });
 
   const body = await req.json().catch(() => null);
   const parsed = Schema.safeParse(body);
+
   if (!parsed.success) {
     return NextResponse.json(
       { ok: false, error: "Invalid request" },
@@ -28,19 +24,19 @@ export async function POST(req: Request) {
     );
   }
 
-  if (parsed.data.password !== process.env.ADMIN_PASSWORD) {
+  const token = await signAdminSession(parsed.data.password);
+  if (!token) {
     return NextResponse.json(
       { ok: false, error: "Unauthorized" },
       { status: 401 }
     );
   }
 
-  const token = await signAdminSession();
-
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(adminCookieName(), token, {
+  res.cookies.set(adminCookieName, token, {
     httpOnly: true,
-    sameSite: "lax",
+    secure: true,
+    sameSite: "strict",
     path: "/",
   });
 

@@ -1,24 +1,41 @@
-import { audit, revokeInvestor } from "./investorStore";
+import { getSupabase } from "./supabase";
+import { audit } from "./investorStore";
 
-/**
- * Auto-expire investor access if TTL passed
- * Phase-1: invoked manually or via cron later
- */
-export async function expireIfNeeded(inv: any) {
-  if (!inv?.expiresAt) return inv;
+export async function expireIfNeeded(investor: any) {
+  if (!investor?.expires_at) return investor;
 
-  const now = Date.now();
-  const expires = new Date(inv.expiresAt).getTime();
+  if (new Date(investor.expires_at) < new Date()) {
+    const supabase = getSupabase();
 
-  if (expires > now) return inv;
+    const { data } = await supabase
+      .from("investors")
+      .update({ status: "EXPIRED" })
+      .eq("email", investor.email)
+      .select()
+      .single();
 
-  // Revoke access
-  const updated = await revokeInvestor(inv.email);
+    await audit(investor.email, "EXPIRED");
+    return data;
+  }
 
-  // Audit expiry
-  await audit(inv.email, "EXPIRED", {
-    expiresAt: inv.expiresAt,
-  });
+  return investor;
+}
 
-  return updated;
+export async function expireExpiredInvestors() {
+  const supabase = getSupabase();
+
+  const { data } = await supabase
+    .from("investors")
+    .select("*")
+    .eq("status", "APPROVED")
+    .lt("expires_at", new Date().toISOString());
+
+  let expired = 0;
+
+  for (const inv of data ?? []) {
+    await expireIfNeeded(inv);
+    expired++;
+  }
+
+  return { expired };
 }
