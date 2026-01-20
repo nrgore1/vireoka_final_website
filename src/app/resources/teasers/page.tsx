@@ -1,20 +1,33 @@
-import { teaserScripts } from "@/content/teasers/teasers";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Vireoka — Teaser",
+  description:
+    "A brief introduction to Vireoka and our approach to governable AI.",
+};
 
 export default function TeasersPage() {
   return (
-    <div className="space-y-8 max-w-3xl">
-      <h1 className="text-3xl font-semibold tracking-tight">30-second Vireoka teaser scripts (public-safe)</h1>
-      <p className="text-neutral-700">
-        These scripts are designed for voiceover + motion graphics and avoid confidential implementation details.
-      </p>
+    <section className="max-w-4xl mx-auto">
+      <h1 className="text-3xl font-semibold text-vireoka-indigo mb-6">
+        Vireoka teaser
+      </h1>
 
-      {teaserScripts.map((t) => (
-        <div key={t.title} className="rounded-lg border p-5 space-y-2">
-          <h2 className="font-semibold">{t.title}</h2>
-          <p className="text-sm text-neutral-700">{t.intent}</p>
-          <pre className="whitespace-pre-wrap text-sm bg-neutral-50 border rounded-md p-3">{t.script}</pre>
-        </div>
-      ))}
-    </div>
+      <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-vireoka-line bg-black">
+        <video
+          src="/videos/vireoka-teaser.mp4"
+          controls
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-contain"
+        />
+      </div>
+
+      <p className="mt-6 text-sm text-neutral-600">
+        This short video introduces Vireoka’s mission to make agentic AI
+        systems explainable, reviewable, and accountable in real-world
+        environments.
+      </p>
+    </section>
   );
 }

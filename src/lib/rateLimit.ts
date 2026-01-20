@@ -1,32 +1,59 @@
-type Bucket = { count: number; ts: number };
+import { NextResponse } from "next/server";
 
-const buckets = new Map<string, Bucket>();
+type RateLimitOptions = {
+  max: number;
+  windowMs: number;
+};
+
+const store = new Map<
+  string,
+  { count: number; resetAt: number }
+>();
 
 export function rateLimit(
   key: string,
-  limit = 30,
-  windowMs = 60_000
+  opts: RateLimitOptions
 ): boolean {
   const now = Date.now();
-  const b = buckets.get(key);
+  const entry = store.get(key);
 
-  if (!b || now - b.ts > windowMs) {
-    buckets.set(key, { count: 1, ts: now });
+  if (!entry || entry.resetAt < now) {
+    store.set(key, {
+      count: 1,
+      resetAt: now + opts.windowMs,
+    });
     return true;
   }
 
-  if (b.count >= limit) return false;
+  if (entry.count >= opts.max) {
+    return false;
+  }
 
-  b.count++;
+  entry.count += 1;
   return true;
 }
 
+/**
+ * Convenience helper for API routes.
+ * Returns a NextResponse if rate-limited, otherwise null.
+ */
 export function rateLimitOrThrow(
-  key: string,
-  limit = 30,
-  windowMs = 60_000
-) {
-  if (!rateLimit(key, limit, windowMs)) {
-    throw new Error("RATE_LIMITED");
+  req: Request,
+  opts: RateLimitOptions
+): NextResponse | null {
+  const ip =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("x-real-ip") ||
+    "local";
+
+  const key = `${opts.max}:${opts.windowMs}:${ip}`;
+
+  if (!rateLimit(key, opts)) {
+    return NextResponse.json(
+      { ok: false, error: "Rate limited" },
+      { status: 429 }
+    );
   }
+
+  return null;
 }

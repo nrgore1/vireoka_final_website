@@ -1,3 +1,7 @@
+/* =======================
+   Investor event types
+======================= */
+
 export const EVENT_TYPES = [
   "PAGE_VIEW",
   "LOGIN",
@@ -8,16 +12,9 @@ export const EVENT_TYPES = [
 
 export type InvestorEventType = typeof EVENT_TYPES[number];
 
-export const AUDIT_ACTIONS = [
-  "APPROVED",
-  "REVOKED",
-  "EXPIRED",
-  "NDA_ACCEPTED",
-  "SUSPICIOUS_ACTIVITY",
-] as const;
-
-export type AuditAction = typeof AUDIT_ACTIONS[number];
-
+/* =======================
+   Audit action types
+======================= */
 
 export const AUDIT_ACTIONS = [
   "APPROVED",
@@ -28,4 +25,3 @@ export const AUDIT_ACTIONS = [
 ] as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[number];
-
