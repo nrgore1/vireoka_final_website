@@ -2,16 +2,20 @@ import "server-only";
 
 /**
  * Typed, no-op Supabase admin stub
- * Build- and type-safe only.
+ * Accurately models Supabase chaining behavior.
  */
 
 type FakeResult = Promise<{ data: any[]; error: null }>;
 
+type FakeTerminal = {
+  then: FakeResult["then"];
+  limit: (...args: any[]) => FakeResult;
+};
+
 type FakeQuery = {
   select: (...args: any[]) => FakeQuery;
   eq: (...args: any[]) => FakeQuery;
-  order: (...args: any[]) => FakeQuery;
-  limit: (...args: any[]) => FakeResult;
+  order: (...args: any[]) => FakeTerminal;
   upsert: (...args: any[]) => Promise<{ error: null }>;
   update: (...args: any[]) => FakeQuery;
   insert: (...args: any[]) => Promise<{ error: null }>;
@@ -23,6 +27,16 @@ type FakeSupabase = {
 };
 
 export function supabaseAdmin(): FakeSupabase {
+  const terminal = (): FakeTerminal => {
+    const result = Promise.resolve({ data: [], error: null });
+    return {
+      then: result.then.bind(result),
+      limit() {
+        return result;
+      },
+    };
+  };
+
   return {
     from() {
       return {
@@ -33,10 +47,7 @@ export function supabaseAdmin(): FakeSupabase {
           return this;
         },
         order() {
-          return this;
-        },
-        limit() {
-          return Promise.resolve({ data: [], error: null });
+          return terminal();
         },
         upsert() {
           return Promise.resolve({ error: null });
