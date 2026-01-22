@@ -12,6 +12,7 @@ type FakeQuery = {
   eq: (...args: any[]) => FakeQuery;
   order: (...args: any[]) => FakeResult;
   upsert: (...args: any[]) => Promise<{ error: null }>;
+  update: (...args: any[]) => FakeQuery;
   maybeSingle: () => Promise<{ data: null; error: null }>;
 };
 
@@ -34,6 +35,9 @@ export function supabaseAdmin(): FakeSupabase {
         },
         upsert() {
           return Promise.resolve({ error: null });
+        },
+        update() {
+          return this;
         },
         async maybeSingle() {
           return { data: null, error: null };
