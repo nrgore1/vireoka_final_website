@@ -1,6 +1,12 @@
+export type NavItem = {
+  label: string;
+  href: string;
+};
+
 export type SiteInfo = {
   name: string;
   url: string;
+  nav: NavItem[];
   footer: {
     legal: string;
     copyright: string;
@@ -15,6 +21,13 @@ export const site: SiteInfo = {
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.SITE_URL ||
     "http://localhost:3000",
+
+  nav: [
+    { label: "Leadership", href: "/leadership" },
+    { label: "Resources", href: "/resources" },
+    { label: "Trust", href: "/trust" },
+    { label: "Investors", href: "/investors" },
+  ],
 
   footer: {
     legal:
