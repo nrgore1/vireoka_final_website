@@ -10,7 +10,8 @@ type FakeResult = Promise<{ data: any[]; error: null }>;
 type FakeQuery = {
   select: (...args: any[]) => FakeQuery;
   eq: (...args: any[]) => FakeQuery;
-  order: (...args: any[]) => FakeResult;
+  order: (...args: any[]) => FakeQuery;
+  limit: (...args: any[]) => FakeResult;
   upsert: (...args: any[]) => Promise<{ error: null }>;
   update: (...args: any[]) => FakeQuery;
   insert: (...args: any[]) => Promise<{ error: null }>;
@@ -32,6 +33,9 @@ export function supabaseAdmin(): FakeSupabase {
           return this;
         },
         order() {
+          return this;
+        },
+        limit() {
           return Promise.resolve({ data: [], error: null });
         },
         upsert() {
