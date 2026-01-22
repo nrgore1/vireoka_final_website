@@ -2,13 +2,15 @@ import "server-only";
 
 /**
  * Typed, no-op Supabase admin stub
- * Satisfies build + TypeScript only.
+ * Build- and type-safe only.
  */
+
+type FakeResult = Promise<{ data: any[]; error: null }>;
 
 type FakeQuery = {
   select: (...args: any[]) => FakeQuery;
   eq: (...args: any[]) => FakeQuery;
-  order: (...args: any[]) => FakeQuery;
+  order: (...args: any[]) => FakeResult;
   maybeSingle: () => Promise<{ data: null; error: null }>;
 };
 
@@ -27,7 +29,7 @@ export function supabaseAdmin(): FakeSupabase {
           return this;
         },
         order() {
-          return this;
+          return Promise.resolve({ data: [], error: null });
         },
         async maybeSingle() {
           return { data: null, error: null };
