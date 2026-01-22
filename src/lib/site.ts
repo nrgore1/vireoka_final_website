@@ -3,8 +3,11 @@ export type SiteInfo = {
   url: string;
   footer: {
     legal: string;
+    copyright: string;
   };
 };
+
+const year = new Date().getFullYear();
 
 export const site: SiteInfo = {
   name: "Vireoka",
@@ -15,8 +18,8 @@ export const site: SiteInfo = {
 
   footer: {
     legal:
-      "Vireoka is committed to safety, responsible AI use, and ethical governance. © " +
-      new Date().getFullYear(),
+      "Vireoka is committed to safety, responsible AI use, and ethical governance.",
+    copyright: `© ${year} Vireoka. All rights reserved.`,
   },
 };
 
