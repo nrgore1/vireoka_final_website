@@ -1,59 +1,12 @@
-import { NextResponse } from "next/server";
+const map = new Map<string, number[]>();
 
-type RateLimitOptions = {
-  max: number;
-  windowMs: number;
-};
-
-const store = new Map<
-  string,
-  { count: number; resetAt: number }
->();
-
-export function rateLimit(
-  key: string,
-  opts: RateLimitOptions
-): boolean {
+export function rateLimit(key: string, limit = 5, windowMs = 60000) {
   const now = Date.now();
-  const entry = store.get(key);
+  const hits = map.get(key)?.filter((t) => now - t < windowMs) || [];
 
-  if (!entry || entry.resetAt < now) {
-    store.set(key, {
-      count: 1,
-      resetAt: now + opts.windowMs,
-    });
-    return true;
-  }
+  if (hits.length >= limit) return false;
 
-  if (entry.count >= opts.max) {
-    return false;
-  }
-
-  entry.count += 1;
+  hits.push(now);
+  map.set(key, hits);
   return true;
-}
-
-/**
- * Convenience helper for API routes.
- * Returns a NextResponse if rate-limited, otherwise null.
- */
-export function rateLimitOrThrow(
-  req: Request,
-  opts: RateLimitOptions
-): NextResponse | null {
-  const ip =
-    req.headers.get("x-forwarded-for") ||
-    req.headers.get("x-real-ip") ||
-    "local";
-
-  const key = `${opts.max}:${opts.windowMs}:${ip}`;
-
-  if (!rateLimit(key, opts)) {
-    return NextResponse.json(
-      { ok: false, error: "Rate limited" },
-      { status: 429 }
-    );
-  }
-
-  return null;
 }

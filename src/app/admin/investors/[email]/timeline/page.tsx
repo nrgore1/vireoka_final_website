@@ -1,0 +1,73 @@
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export const runtime = "nodejs";
+
+export default async function InvestorTimelinePage({
+  params,
+}: {
+  params: { email: string };
+}) {
+  const email = decodeURIComponent(params.email);
+  const supabase = supabaseAdmin();
+
+  const { data: comms } = await supabase
+    .from("investor_comms")
+    .select(`
+      id,
+      type,
+      subject,
+      status,
+      error,
+      created_at,
+      email_tracking_events(event)
+    `)
+    .eq("email", email)
+    .order("created_at", { ascending: false });
+
+  return (
+    <div className="p-8 space-y-6">
+      <h1 className="text-2xl font-semibold">Investor Communication Timeline</h1>
+      <p className="text-sm text-neutral-600">{email}</p>
+
+      <div className="space-y-4">
+        {(comms || []).map((c) => {
+          const opens = c.email_tracking_events.filter(e => e.event === "open").length;
+          const clicks = c.email_tracking_events.filter(e => e.event === "click").length;
+
+          return (
+            <div key={c.id} className="border rounded p-4 space-y-2">
+              <div className="flex justify-between items-center">
+                <div className="font-medium">{c.subject}</div>
+                <div className="text-xs text-neutral-500">{c.created_at}</div>
+              </div>
+
+              <div className="text-sm text-neutral-600">{c.type}</div>
+
+              <div className="flex items-center gap-4 text-xs">
+                <span>Status: <strong>{c.status}</strong></span>
+                <span>Opens: <strong>{opens}</strong></span>
+                <span>Clicks: <strong>{clicks}</strong></span>
+              </div>
+
+              {c.error && (
+                <div className="text-xs text-red-600">Error: {c.error}</div>
+              )}
+
+              <form
+                action="/api/admin/investors/resend"
+                method="POST"
+                className="pt-2"
+              >
+                <input type="hidden" name="email" value={email} />
+                <input type="hidden" name="type" value={c.type} />
+                <button className="text-xs underline text-blue-600">
+                  Resend (throttle-aware)
+                </button>
+              </form>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
