@@ -1,26 +1,43 @@
-import { getSupabase } from "./supabase";
-import { EVENT_TYPES } from "./eventTypes";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export async function recordInvestorEvent(input: {
+export type InvestorEvent = {
   email: string;
-  event: (typeof EVENT_TYPES)[number];
-  path?: string;
-  ip: string;
-}) {
-  let supabase;
-  try {
-    supabase = getSupabase();
-  } catch {
-    // Allow dev without analytics infra
-    return { ok: true, skipped: "no_supabase" };
-  }
+  type: string;
+  path?: string | null;
+  meta?: any | null;
+};
+
+/**
+ * Canonical write function
+ */
+export async function recordInvestorEvent(event: InvestorEvent) {
+  const supabase = supabaseAdmin();
 
   await supabase.from("investor_events").insert({
-    email: input.email,
-    event: input.event,
-    path: input.path ?? null,
-    ip: input.ip,
+    email: event.email,
+    type: event.type,
+    path: event.path ?? null,
+    meta: event.meta ?? null,
   });
+}
 
-  return { ok: true };
+/**
+ * Alias used by API routes (semantic clarity)
+ */
+export const logInvestorEvent = recordInvestorEvent;
+
+/**
+ * Admin read access
+ */
+export async function listInvestorEvents(limit = 500) {
+  const supabase = supabaseAdmin();
+
+  const { data, error } = await supabase
+    .from("investor_events")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data ?? [];
 }

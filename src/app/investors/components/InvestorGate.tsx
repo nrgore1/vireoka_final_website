@@ -1,57 +1,43 @@
-import { supabaseServer } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+"use client";
 
-function isExpired(ts?: string | null) {
-  if (!ts) return false;
-  return new Date(ts).getTime() < Date.now();
-}
+import { useEffect, useState } from "react";
+import { supabaseClient } from "@/lib/supabase/client";
 
-export default async function InvestorGate({
+export default function InvestorGate({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await supabaseServer();
+  const [allowed, setAllowed] = useState<boolean | null>(null);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  useEffect(() => {
+    const check = async () => {
+      const supabase = supabaseClient();
+      const { data } = await supabase.auth.getUser();
 
-  // 🔹 NOT LOGGED IN → REQUEST ACCESS (FIRST-TIME FLOW)
-  if (!user?.email) {
-    redirect("/request-access");
+      if (!data.user?.email) {
+        setAllowed(false);
+        return;
+      }
+
+      // Ask server if this investor is approved
+      const res = await fetch("/api/investors/check");
+      setAllowed(res.ok);
+    };
+
+    check();
+  }, []);
+
+  if (allowed === null) return null;
+
+  if (!allowed) {
+    return (
+      <div style={{ maxWidth: 520, margin: "120px auto", textAlign: "center" }}>
+        <h1>Investor Access</h1>
+        <p>This section is available to approved investors only.</p>
+      </div>
+    );
   }
-
-  // 🔹 LOGGED IN → CHECK INVESTOR RECORD
-  const { data: investor, error } = await supabase
-    .from("investors")
-    .select("nda_signed, invite_expires_at, access_expires_at")
-    .eq("email", user.email)
-    .single();
-
-  // 🔹 LOGGED IN BUT NOT INVITED / APPROVED
-  if (error || !investor) {
-    redirect("/request-access");
-  }
-
-  // 🔹 INVITE OR ACCESS EXPIRED
-  if (
-    isExpired(investor.invite_expires_at) ||
-    isExpired(investor.access_expires_at)
-  ) {
-    redirect("/investors/expired");
-  }
-
-  // 🔹 NDA NOT SIGNED
-  if (!investor.nda_signed) {
-    redirect("/investors/nda");
-  }
-
-  // 🔹 UPDATE LAST ACCESS
-  await supabase
-    .from("investors")
-    .update({ last_access: new Date().toISOString() })
-    .eq("email", user.email);
 
   return <>{children}</>;
 }

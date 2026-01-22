@@ -1,62 +1,43 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { watermarkPdf } from "@/lib/pdf/watermark";
 import fs from "fs/promises";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const commId = searchParams.get("commId");
+  const email = searchParams.get("email")!;
+  const commId = searchParams.get("commId")!;
 
-  if (!commId) {
-    return NextResponse.json(
-      { error: "Missing commId" },
-      { status: 400 }
-    );
-  }
+  const supabase = supabaseAdmin();
 
-  // 🔐 Authenticated user only
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user?.email) {
-    return NextResponse.json(
-      { error: "Not authenticated" },
-      { status: 401 }
-    );
-  }
-
-  // 🔍 Verify approved investor
   const { data: investor } = await supabase
     .from("investors")
     .select("status")
-    .eq("email", user.email)
+    .eq("email", email)
     .single();
 
   if (investor?.status !== "approved") {
-    return NextResponse.json(
-      { error: "Investor access not approved" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // 📄 Load base investor deck
   const pdfBytes = await fs.readFile("private/investor_deck.pdf");
-
-  // 🏷️ Watermark ties identity + time + communication
-  const label = `${user.email} • ${new Date().toISOString()} • ${commId}`;
+  const label = `${email} • ${new Date().toISOString()} • ${commId}`;
 
   const watermarked = await watermarkPdf(pdfBytes, label);
 
-  return new NextResponse(watermarked, {
+  // ✅ Normalize to Node Buffer (kills SharedArrayBuffer issue)
+  const buffer = Buffer.from(watermarked);
+
+  const blob = new Blob([buffer], {
+    type: "application/pdf",
+  });
+
+  return new NextResponse(blob, {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": "inline; filename=Vireoka-Investor-Deck.pdf",
-      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-      "Pragma": "no-cache",
     },
   });
 }

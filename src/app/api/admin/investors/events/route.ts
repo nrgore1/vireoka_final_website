@@ -1,43 +1,21 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/adminGuard";
-import { rateLimit } from "@/lib/rateLimit";
-import { getSupabase } from "@/lib/supabase";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
+import { rateLimitOrThrow } from "@/lib/rateLimit";
+import { listInvestorEvents } from "@/lib/investorEvents";
 
 export async function GET(req: Request) {
-  // Auth
-  requireAdmin(req);
-
-  const ip =
-    req.headers.get("x-forwarded-for") ||
-    req.headers.get("x-real-ip") ||
-    "local";
-
-  const key = `admin:events:${ip}`;
-  if (!rateLimit(key, { max: 120, windowMs: 60_000 })) {
-    return NextResponse.json(
-      { ok: false, error: "Rate limited" },
-      { status: 429 }
-    );
+  if (!(await requireAdmin())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const url = new URL(req.url);
-  const email = url.searchParams.get("email");
+  // 🔒 Rate limit (throws automatically)
+  rateLimitOrThrow(req, {
+    max: 120,
+    windowMs: 60_000,
+  });
 
-  if (!email) {
-    return NextResponse.json(
-      { ok: false, error: "Missing email" },
-      { status: 400 }
-    );
-  }
-
-  const supabase = getSupabase();
-
-  const { data } = await supabase
-    .from("investor_events")
-    .select("*")
-    .eq("email", email)
-    .order("created_at", { ascending: false })
-    .limit(500);
-
-  return NextResponse.json({ ok: true, events: data ?? [] });
+  const rows = await listInvestorEvents();
+  return NextResponse.json({ ok: true, rows });
 }
