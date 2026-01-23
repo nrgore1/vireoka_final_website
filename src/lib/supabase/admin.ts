@@ -1,67 +1,22 @@
 import "server-only";
+import { createClient } from "@supabase/supabase-js";
 
-/**
- * Typed, no-op Supabase admin stub
- * Accurately models Supabase chaining behavior.
- */
+function mustGet(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing env var: ${name}`);
+  return v;
+}
 
-type FakeResult = Promise<{ data: any[]; error: null }>;
+export function supabaseAdmin() {
+  const url = mustGet("SUPABASE_URL");
+  const serviceRole = mustGet("SUPABASE_SERVICE_ROLE_KEY");
 
-type FakeTerminal = {
-  then: FakeResult["then"];
-  limit: (...args: any[]) => FakeResult;
-};
-
-type FakeQuery = {
-  select: (...args: any[]) => FakeQuery;
-  eq: (...args: any[]) => FakeQuery;
-  order: (...args: any[]) => FakeTerminal;
-  upsert: (...args: any[]) => Promise<{ error: null }>;
-  update: (...args: any[]) => FakeQuery;
-  insert: (...args: any[]) => Promise<{ error: null }>;
-  maybeSingle: () => Promise<{ data: null; error: null }>;
-};
-
-type FakeSupabase = {
-  from: (table: string) => FakeQuery;
-};
-
-export function supabaseAdmin(): FakeSupabase {
-  const terminal = (): FakeTerminal => {
-    const result = Promise.resolve({ data: [], error: null });
-    return {
-      then: result.then.bind(result),
-      limit() {
-        return result;
-      },
-    };
-  };
-
-  return {
-    from() {
-      return {
-        select() {
-          return this;
-        },
-        eq() {
-          return this;
-        },
-        order() {
-          return terminal();
-        },
-        upsert() {
-          return Promise.resolve({ error: null });
-        },
-        update() {
-          return this;
-        },
-        insert() {
-          return Promise.resolve({ error: null });
-        },
-        async maybeSingle() {
-          return { data: null, error: null };
-        },
-      };
+  // Service-role key MUST remain server-only.
+  return createClient(url, serviceRole, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
     },
-  };
+  });
 }
