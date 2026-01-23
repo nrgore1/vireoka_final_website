@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  turbopack: {
+    // Pin Turbopack root to this app directory to avoid lockfile-root ambiguity.
+    root: __dirname,
+  },
 };
 
 module.exports = nextConfig;

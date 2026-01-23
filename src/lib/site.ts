@@ -1,18 +1,45 @@
-export const site = {
+export type NavItem = {
+  label: string;
+  href: string;
+};
+
+export type SiteInfo = {
+  name: string;
+  url: string;
+  nav: NavItem[];
+  footer: {
+    legal: string;
+    copyright: string;
+  };
+};
+
+const year = new Date().getFullYear();
+
+export const site: SiteInfo = {
   name: "Vireoka",
-  tagline: "Governed intelligence for high-stakes decisions.",
-  description:
-    "Vireoka is a governance-first intelligence platform: explainable decisions, auditable lineage, confidence scoring, and policy enforcement—built for enterprises and institutions.",
+  url:
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.SITE_URL ||
+    "http://localhost:3000",
+
   nav: [
-    { href: "/", label: "Home" },
-    { href: "/whitepapers", label: "Whitepapers" },
-    { href: "/trust", label: "Trust Center" },
-    { href: "/videos", label: "Videos" },
-    { href: "/investors", label: "Investors" },
+    { label: "Leadership", href: "/leadership" },
+    { label: "Resources", href: "/resources" },
+    { label: "Trust", href: "/trust" },
+    { label: "Investors", href: "/investors" },
   ],
+
   footer: {
     legal:
-      "Vireoka provides governance and decision-support. It does not replace professional judgment. High-stakes domains require appropriate human oversight.",
-    copyright: `© ${new Date().getFullYear()} Vireoka LLC. All rights reserved.`,
+      "Vireoka is committed to safety, responsible AI use, and ethical governance.",
+    copyright: `© ${year} Vireoka. All rights reserved.`,
   },
 };
+
+export function siteUrl(): URL {
+  try {
+    return new URL(site.url);
+  } catch {
+    return new URL("http://localhost:3000");
+  }
+}

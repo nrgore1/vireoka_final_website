@@ -1,12 +1,16 @@
+import "server-only";
 import { cookies } from "next/headers";
-import { adminCookieName, verifyAdminSession } from "@/lib/adminSession";
+import { adminCookieName, verifyAdminSession } from "./adminSession";
 
-export async function requireAdmin(_req: Request): Promise<boolean> {
+/**
+ * Admin guard: returns true if a valid admin session exists.
+ */
+export async function requireAdmin(): Promise<boolean> {
   const cookieStore = await cookies();
-
-  // adminCookieName is a STRING, not a function
   const token = cookieStore.get(adminCookieName)?.value;
+
   if (!token) return false;
 
-  return verifyAdminSession(token);
+  const session = await verifyAdminSession(token);
+  return session !== null;
 }
