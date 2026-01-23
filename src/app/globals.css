@@ -2,31 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base typography & resets */
-@layer base {
-  html {
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-      "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-    background-color: #ffffff;
-  }
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
 
-  body {
-    color: #334155;
-    line-height: 1.6;
-  }
-
-  h1, h2, h3, h4 {
-    color: #1E1B4B;
-    letter-spacing: -0.02em;
-  }
-
-  a {
-    color: #0F766E;
-    text-decoration: none;
-  }
-
-  a:hover {
-    text-decoration: underline;
-    text-underline-offset: 4px;
-  }
+* {
+  box-sizing: border-box;
 }
