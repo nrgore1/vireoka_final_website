@@ -5,6 +5,7 @@ export type InvestorEvent = {
   email: string;
   type: string;
   path?: string | null;
+  meta?: any;
 };
 
 export async function recordInvestorEvent(ev: InvestorEvent) {
@@ -13,6 +14,7 @@ export async function recordInvestorEvent(ev: InvestorEvent) {
     email: ev.email,
     type: ev.type,
     path: ev.path ?? null,
+    meta: ev.meta ?? null,
   });
 }
 
@@ -23,4 +25,8 @@ export async function listInvestorEvents() {
     .select("*")
     .order("created_at", { ascending: false });
   return data ?? [];
+}
+
+export async function logInvestorEvent(ev: InvestorEvent) {
+  return recordInvestorEvent(ev);
 }
