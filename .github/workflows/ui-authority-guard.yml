@@ -1,0 +1,18 @@
+name: UI Authority Guard
+
+on:
+  pull_request:
+    branches:
+      - main
+      - production
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: UI authority drift guard (vs production)
+        run: ./scripts/ci-guardrails-ui-authority.sh production

@@ -1,17 +1,38 @@
-import { sendEmail } from "./email";
+import { sendEmail } from "@/lib/email";
 
-export async function notifyApproved(email: string) {
+export async function sendInvestorApprovedEmail(
+  email: string,
+  token: string
+) {
+  const link = `${process.env.NEXT_PUBLIC_SITE_URL}/investors/accept?token=${token}`;
+
+  const html = `
+<p>Dear Investor,</p>
+
+<p>
+We are pleased to inform you that your request for investor access to
+<strong>Vireoka</strong> has been approved.
+</p>
+
+<p>
+To proceed, please review and accept our Non-Disclosure Agreement using the
+secure link below:
+</p>
+
+<p>
+<a href="${link}">Accept NDA & Access Investor Materials</a>
+</p>
+
+<p>
+If you did not request this access, you may safely ignore this email.
+</p>
+
+<p>— <strong>The Vireoka Team</strong></p>
+`.trim();
+
   await sendEmail({
     to: email,
-    subject: "Investor access approved",
-    text: "Your investor access has been approved. You may now access the portal.",
-  });
-}
-
-export async function notifyRevoked(email: string) {
-  await sendEmail({
-    to: email,
-    subject: "Investor access revoked",
-    text: "Your investor access has been revoked. If you believe this is an error, contact support.",
+    subject: "Your Vireoka Investor Access",
+    html,
   });
 }

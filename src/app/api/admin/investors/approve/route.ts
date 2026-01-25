@@ -1,30 +1,39 @@
-export const runtime = "nodejs";
-
 import { NextResponse } from "next/server";
-import { supabaseAdmin, requireAdminToken } from "@/lib/supabase/admin";
+import { z } from "zod";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createInviteToken } from "@/lib/inviteToken";
+import { sendInvestorApprovedEmail } from "@/lib/investorNotifications";
+import { INVITE_TTL_HOURS } from "@/lib/nda";
+import { rateLimitOrThrow } from "@/lib/rateLimit";
+
+const Schema = z.object({ email: z.string().email() });
 
 export async function POST(req: Request) {
-  if (!requireAdminToken(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    rateLimitOrThrow("admin_approve_investor", 60, 60_000);
+  } catch {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const { email, admin } = await req.json();
-  const supabase = supabaseAdmin();
+  const parsed = Schema.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+  }
 
+  const token = createInviteToken();
+  const expiresAt = new Date(Date.now() + INVITE_TTL_HOURS * 60 * 60 * 1000).toISOString();
+
+  const supabase = supabaseAdmin();
   await supabase
     .from("investors")
     .update({
-      status: "approved",
       approved_at: new Date().toISOString(),
-      approved_by: admin,
+      invite_token: token,
+      invite_token_expires_at: expiresAt,
     })
-    .eq("email", email);
+    .eq("email", parsed.data.email);
 
-  await supabase.from("audit_logs").insert({
-    actor_email: admin,
-    action: "approve_investor",
-    target: email,
-  });
+  await sendInvestorApprovedEmail(parsed.data.email, token);
 
   return NextResponse.json({ ok: true });
 }

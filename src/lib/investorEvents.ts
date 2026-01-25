@@ -5,28 +5,34 @@ export type InvestorEvent = {
   email: string;
   type: string;
   path?: string | null;
-  meta?: any;
+  ip?: string | null;
+  user_agent?: string | null;
+  meta?: any | null;
 };
 
-export async function recordInvestorEvent(ev: InvestorEvent) {
+export async function recordInvestorEvent(evt: InvestorEvent) {
   const sb = supabaseAdmin();
-  await sb.from("investor_events").insert({
-    email: ev.email,
-    type: ev.type,
-    path: ev.path ?? null,
-    meta: ev.meta ?? null,
+  const { error } = await sb.from("investor_events").insert({
+    email: evt.email,
+    type: evt.type,
+    path: evt.path ?? null,
+    ip: evt.ip ?? null,
+    user_agent: evt.user_agent ?? null,
+    meta: evt.meta ?? null,
   });
+  if (error) throw error;
 }
 
-export async function listInvestorEvents() {
+export async function listInvestorEvents(email?: string) {
   const sb = supabaseAdmin();
-  const { data } = await sb
+  let q = sb
     .from("investor_events")
-    .select("*")
-    .order("created_at", { ascending: false });
-  return data ?? [];
-}
+    .select("id,created_at,email,type,path,ip,user_agent,meta")
+    .order("created_at", { ascending: false })
+    .limit(500);
 
-export async function logInvestorEvent(ev: InvestorEvent) {
-  return recordInvestorEvent(ev);
+  if (email) q = q.eq("email", email);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data as any[]) || [];
 }

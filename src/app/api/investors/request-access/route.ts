@@ -1,23 +1,36 @@
-export const runtime = "nodejs";
-
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { emailRequestReceived } from "@/lib/notify";
 
+const Schema = z.object({
+  name: z.string(),
+  email: z.string().email(),
+  role: z.string().optional(),
+  firm: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 export async function POST(req: Request) {
-  const { email, firm, message } = await req.json();
+  const parsed = Schema.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+  }
+
+  const { name, email, role, firm, notes } = parsed.data;
   const supabase = supabaseAdmin();
 
-  // upsert pending (avoid duplicates)
-  await supabase.from("investors").upsert(
-    { email, status: "pending" },
-    { onConflict: "email" }
-  );
+  await supabase.from("investors").upsert({
+    email,
+    full_name: name,
+    role,
+    firm,
+    notes,
+    approved_at: null,
+    nda_accepted_at: null,
+  });
 
-  // optional: store firm/message in audit logs if you want
-  // (keeping it minimal here)
-
-  await emailRequestReceived(email);
+  await emailRequestReceived({ email, name, role, firm });
 
   return NextResponse.json({ ok: true });
 }

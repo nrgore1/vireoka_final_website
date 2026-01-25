@@ -1,29 +1,17 @@
-export async function notifyHotInvestor(email: string, score: number) {
-  if (score < 12) return;
+export async function notifyHotInvestor(email: string, score: number, topPaths?: string[]) {
+  const webhook = process.env.SLACK_WEBHOOK_URL;
+  if (!webhook) return;
 
-  const payload = {
-    text: "🔥 Hot Investor Detected",
-    blocks: [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `*${email}* just crossed the engagement threshold.\nScore: *${score}*`,
-        },
-      },
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `<https://vireoka.com/admin/investors/${encodeURIComponent(email)}/timeline|View timeline →>`,
-        },
-      },
-    ],
-  };
+  const lines = [
+    `🔥 *Hot investor* detected`,
+    `*Email:* ${email}`,
+    `*Score:* ${score}`,
+    topPaths?.length ? `*Top paths:* ${topPaths.slice(0, 5).join(", ")}` : null,
+  ].filter(Boolean);
 
-  await fetch(process.env.SLACK_WEBHOOK_URL!, {
+  await fetch(webhook, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+    body: JSON.stringify({ text: lines.join("\n") }),
+  }).catch(() => null);
 }

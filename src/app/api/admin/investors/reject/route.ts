@@ -1,17 +1,25 @@
-export const runtime = "nodejs";
-
 import { NextResponse } from "next/server";
-import { supabaseAdmin, requireAdminToken } from "@/lib/supabase/admin";
-import { emailRejected } from "@/lib/notify";
+import { z } from "zod";
+import { requireAdmin } from "@/lib/adminGuard";
+import { rejectInvestor } from "@/lib/investorStore";
+
+const Schema = z.object({
+  email: z.string().email(),
+  reason: z.string().optional(),
+});
 
 export async function POST(req: Request) {
-  if (!requireAdminToken(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  await requireAdmin();
 
-  const { email } = await req.json();
-  const supabase = supabaseAdmin();
+  const body = await req.json();
+  const parsed = Schema.safeParse(body);
 
-  await supabase.from("investors").update({ status: "revoked" }).eq("email", email);
-  await emailRejected(email);
+  if (!parsed.success) {
+    return NextResponse.json({ ok: false }, { status: 400 });
+  }
+
+  // Reject is a command; reason can be logged later if needed
+  await rejectInvestor(parsed.data.email.toLowerCase());
 
   return NextResponse.json({ ok: true });
 }

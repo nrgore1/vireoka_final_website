@@ -9,38 +9,25 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("vireoka_investor_token")?.value;
-
-  if (!token) {
+  const sess = await verifyInvestorSession();
+  if (!sess) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  const email = await verifyInvestorSession(token);
-  if (typeof email !== "string") {
-    return NextResponse.json({ ok: false }, { status: 401 });
-  }
-
-  const body = await req.json().catch(() => null);
+  const body = await req.json();
   const parsed = Schema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  let supabase;
-  try {
-    supabase = getSupabase();
-  } catch {
-    // Dev-safe: allow UI to function without infra
-    return NextResponse.json({ ok: true, skipped: "no_supabase" });
-  }
+  const supabase = getSupabase();
 
   await supabase
-    .from("investor_preferences")
-    .upsert({
-      email,
+    .from("investors")
+    .update({
       analytics_enabled: parsed.data.analytics_enabled,
-    });
+    })
+    .eq("email", sess.email);
 
   return NextResponse.json({ ok: true });
 }

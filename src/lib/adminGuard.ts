@@ -1,16 +1,19 @@
-import "server-only";
-import { cookies } from "next/headers";
-import { adminCookieName, verifyAdminSession } from "./adminSession";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { readAdminSession } from "@/lib/adminSession";
 
-/**
- * Admin guard: returns true if a valid admin session exists.
- */
-export async function requireAdmin(): Promise<boolean> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(adminCookieName)?.value;
+export async function requireAdmin(): Promise<{ email: string } | null> {
+  const sess = await readAdminSession();
+  if (!sess?.email) return null;
 
-  if (!token) return false;
+  const supabase = supabaseAdmin();
 
-  const session = await verifyAdminSession(token);
-  return session !== null;
+  const { data, error } = await supabase
+    .from("admins")
+    .select("email")
+    .eq("email", sess.email)
+    .single();
+
+  if (error || !data) return null;
+
+  return { email: data.email };
 }

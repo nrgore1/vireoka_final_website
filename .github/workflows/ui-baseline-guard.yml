@@ -1,0 +1,54 @@
+name: UI Baseline Guard (production is authority)
+
+on:
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch production
+        run: |
+          git fetch origin production:refs/remotes/origin/production
+
+      - name: Fail if UI baseline differs from production
+        run: |
+          set -e
+          FILES=(
+            "src/app/layout.tsx"
+            "src/app/globals.css"
+            "src/app/page.tsx"
+            "src/components/SiteHeader.tsx"
+            "src/components/SiteFooter.tsx"
+          )
+
+          # Only compare files that exist in BOTH branches
+          CHECK=()
+          for f in "${FILES[@]}"; do
+            if git cat-file -e "origin/production:$f" 2>/dev/null && [ -f "$f" ]; then
+              CHECK+=("$f")
+            fi
+          done
+
+          if [ ${#CHECK[@]} -eq 0 ]; then
+            echo "No baseline files found to compare. Skipping."
+            exit 0
+          fi
+
+          echo "Comparing UI baseline files against origin/production:"
+          printf '%s\n' "${CHECK[@]}"
+
+          if ! git diff --exit-code origin/production -- "${CHECK[@]}"; then
+            echo ""
+            echo "❌ UI baseline drift detected. Production is the visual authority."
+            echo "If you truly intend to change UI, merge into production first (or update baseline explicitly)."
+            exit 1
+          fi
+
+          echo "✅ UI baseline matches production."

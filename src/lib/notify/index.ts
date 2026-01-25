@@ -1,67 +1,42 @@
-import "server-only";
+import { sendEmail } from "@/lib/email";
 
-type Mail = {
-  to: string;
-  subject: string;
-  html: string;
+type InvestorRequestEmailInput = {
+  email: string;
+  name: string;
+  role?: string;
+  firm?: string | null;
 };
 
-type Mailer = {
-  createTransport: (opts: any) => {
-    sendMail: (mail: any) => Promise<void>;
-  };
-};
+export async function notifyInvestorRequestReceived({
+  email,
+  name,
+  role,
+  firm,
+}: InvestorRequestEmailInput) {
+  const html = `
+<p>Hi ${name},</p>
 
-function getMailer(): Mailer {
-  return require("nodemailer") as Mailer;
-}
+<p>We’ve received your request for <strong>investor access</strong> to Vireoka.</p>
 
-async function sendMail(mail: Mail) {
-  const nodemailer = getMailer();
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST!,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER!,
-      pass: process.env.SMTP_PASS!,
-    },
-  });
+<ul>
+  <li><strong>Email:</strong> ${email}</li>
+  ${role ? `<li><strong>Role:</strong> ${role}</li>` : ""}
+  ${firm ? `<li><strong>Firm:</strong> ${firm}</li>` : ""}
+</ul>
 
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM!,
-    ...mail,
-  });
-}
+<p>Our team will review your request and get back to you shortly.</p>
 
-export async function emailRequestReceived(email: string) {
-  await sendMail({
+<p>— <strong>Vireoka Team</strong></p>
+`.trim();
+
+  await sendEmail({
     to: email,
-    subject: "Request received",
-    html: "<p>We’ve received your request.</p>",
+    subject: "Vireoka — Investor access request received",
+    html,
   });
 }
 
-export async function emailApproved(email: string) {
-  await sendMail({
-    to: email,
-    subject: "Request approved",
-    html: "<p>Your request has been approved.</p>",
-  });
-}
-
-export async function emailRejected(email: string) {
-  await sendMail({
-    to: email,
-    subject: "Update on your request",
-    html: "<p>Thank you for your interest.</p>",
-  });
-}
-
-export async function emailFollowUp(email: string) {
-  await sendMail({
-    to: email,
-    subject: "Following up",
-    html: "<p>Just following up.</p>",
-  });
-}
+/**
+ * Backward-compatible alias
+ */
+export const emailRequestReceived = notifyInvestorRequestReceived;

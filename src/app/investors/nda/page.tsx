@@ -1,15 +1,28 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Investor NDA — Vireoka",
-  robots: { index: false, follow: false },
-};
+export default function NdaPage() {
+  async function accept() {
+    await fetch("/api/investors/nda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ndaVersion: 1 }),
+    });
+    window.location.href = "/investors";
+  }
 
-export default function InvestorNdaPage() {
   return (
-    <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold">Investor NDA</h1>
-      <p>This content is restricted to approved investors.</p>
-    </div>
+    <main style={{ padding: 40, maxWidth: 720 }}>
+      <h1>Non-Disclosure Agreement</h1>
+      <p>
+        Access to Vireoka’s confidential investor materials requires acceptance
+        of the NDA below.
+      </p>
+
+      <div style={{ margin: "24px 0" }}>
+        <p><em>[ NDA content goes here ]</em></p>
+      </div>
+
+      <button onClick={accept}>I Accept the NDA</button>
+    </main>
   );
 }

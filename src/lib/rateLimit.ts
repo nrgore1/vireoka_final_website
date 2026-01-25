@@ -1,54 +1,18 @@
-import { NextResponse } from "next/server";
+const buckets = new Map<string, { count: number; resetAt: number }>();
 
-type RateLimitOptions = {
-  max?: number;
-  windowMs?: number;
-};
-
-const hits = new Map<string, { count: number; ts: number }>();
-
-function getKeyFromRequest(req: Request) {
-  const ip =
-    req.headers.get("x-forwarded-for") ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
-
-  const url = new URL(req.url);
-  return `${ip}:${url.pathname}`;
-}
-
-export function rateLimit(
-  key: string,
-  max: number,
-  windowMs: number
-) {
+export function rateLimitOrThrow(key: string, limit: number, windowMs: number) {
   const now = Date.now();
-  const entry = hits.get(key);
+  const b = buckets.get(key);
 
-  if (!entry || now - entry.ts > windowMs) {
-    hits.set(key, { count: 1, ts: now });
-    return true;
+  if (!b || now >= b.resetAt) {
+    buckets.set(key, { count: 1, resetAt: now + windowMs });
+    return;
   }
 
-  if (entry.count >= max) return false;
-
-  entry.count++;
-  return true;
-}
-
-export function rateLimitOrThrow(
-  req: Request,
-  options: RateLimitOptions = {}
-) {
-  const max = options.max ?? 10;
-  const windowMs = options.windowMs ?? 60_000;
-
-  const key = getKeyFromRequest(req);
-
-  if (!rateLimit(key, max, windowMs)) {
-    throw new Response(
-      JSON.stringify({ error: "Rate limit exceeded" }),
-      { status: 429 }
-    );
+  b.count += 1;
+  if (b.count > limit) {
+    const err = new Error("RATE_LIMITED");
+    (err as any).retryAfterMs = b.resetAt - now;
+    throw err;
   }
 }

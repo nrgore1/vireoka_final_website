@@ -1,41 +1,41 @@
-import crypto from "crypto";
+import { cookies } from "next/headers";
 
-const COOKIE_NAME = "vireoka_investor_token";
-const SECRET = process.env.INVESTOR_SESSION_SECRET || "dev-secret";
+export const investorCookieName = "vireoka_investor";
 
-/**
- * Sign an investor session token.
- * MUST return the token string.
- */
-export async function signInvestorSession(email: string): Promise<string> {
-  const payload = `${email}:${Date.now()}`;
-  const hmac = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
-  return `${payload}:${hmac}`;
+export type InvestorSess = {
+  email: string;
+  token: string;
+};
+
+export async function createInvestorSession(email: string, token: string) {
+  const cookieStore = await cookies();
+  const value = JSON.stringify({ email, token } satisfies InvestorSess);
+
+  cookieStore.set({
+    name: investorCookieName,
+    value,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  });
 }
 
-/**
- * Verify investor session token.
- */
-export async function verifyInvestorSession(token: string): Promise<boolean> {
+export async function verifyInvestorSession(): Promise<InvestorSess | null> {
+  const cookieStore = await cookies();
+  const c = cookieStore.get(investorCookieName);
+  if (!c) return null;
+
   try {
-    const [email, ts, sig] = token.split(":");
-    if (!email || !ts || !sig) return false;
-
-    const payload = `${email}:${ts}`;
-    const expected = crypto
-      .createHmac("sha256", SECRET)
-      .update(payload)
-      .digest("hex");
-
-    return crypto.timingSafeEqual(
-      Buffer.from(sig),
-      Buffer.from(expected)
-    );
+    const parsed = JSON.parse(c.value) as InvestorSess;
+    if (!parsed?.email || !parsed?.token) return null;
+    return parsed;
   } catch {
-    return false;
+    return null;
   }
 }
 
-export function investorCookieName() {
-  return COOKIE_NAME;
+export async function clearInvestorSession() {
+  const cookieStore = await cookies();
+  cookieStore.delete(investorCookieName);
 }

@@ -1,145 +1,145 @@
-import { getSupabase } from "./supabase";
-import { sendEmail } from "./email";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
-/* =======================
-   Types
-======================= */
+/* ───────────────── Investor type ───────────────── */
 
-export type InvestorStatus =
-  | "PENDING_APPROVAL"
-  | "PENDING_NDA"
-  | "APPROVED"
-  | "REJECTED"
-  | "EXPIRED";
-
-/* =======================
-   Core
-======================= */
-
-export async function createOrGetInvestor(input: {
+export type Investor = {
   email: string;
-  name: string;
-  org: string;
-  role: string;
-  intent: string;
-}) {
-  const supabase = getSupabase();
+  full_name?: string | null;
+  role?: string | null;
+  firm?: string | null;
+  notes?: string | null;
 
-  const { data } = await supabase
-    .from("investors")
-    .upsert(
-      { email: input.email, status: "PENDING_APPROVAL" },
-      { onConflict: "email" }
-    )
-    .select()
-    .single();
+  approved_at?: string | null;
+  rejected_at?: string | null;
+  revoked_at?: string | null;
 
-  return data;
+  nda_accepted_at?: string | null;
+  nda_version_accepted?: string | number | null;
+
+  expires_at?: string | null;
+
+  engagement_score?: number | null;
+  hot_alerted_at?: string | null;
+};
+
+/* ───────────────── NDA helpers ───────────────── */
+
+function needsNdaAcceptance(input: {
+  nda_accepted_at?: string | null;
+  nda_version_accepted?: number | null;
+}): boolean {
+  if (!input.nda_accepted_at) return true;
+  if (!input.nda_version_accepted) return true;
+  return false;
 }
+
+export function needsNdaReaccept(inv: Investor): boolean {
+  return needsNdaAcceptance({
+    nda_accepted_at: inv.nda_accepted_at,
+    nda_version_accepted:
+      inv.nda_version_accepted != null
+        ? Number(inv.nda_version_accepted)
+        : null,
+  });
+}
+
+export async function acceptNda(email: string, ndaVersion: number) {
+  const supabase = supabaseAdmin();
+  await supabase
+    .from("investors")
+    .update({
+      nda_accepted_at: new Date().toISOString(),
+      nda_version_accepted: ndaVersion,
+    })
+    .eq("email", email);
+}
+
+/* ───────────────── Core investor ops ───────────────── */
+
+export type CreateInvestorInput = {
+  full_name: string;
+  email: string;
+  role: string;
+  firm: string;
+  notes?: string;
+};
 
 export async function getInvestorByEmail(email: string) {
-  const supabase = getSupabase();
-
+  const supabase = supabaseAdmin();
   const { data } = await supabase
     .from("investors")
     .select("*")
     .eq("email", email)
     .single();
 
-  return data;
+  return data as Investor | null;
 }
 
-export async function listInvestors() {
-  const supabase = getSupabase();
+export async function createOrGetInvestor(input: CreateInvestorInput) {
+  const supabase = supabaseAdmin();
+
+  const existing = await getInvestorByEmail(input.email);
+  if (existing) return existing;
 
   const { data } = await supabase
     .from("investors")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  return data ?? [];
-}
-
-/* =======================
-   NDA
-======================= */
-
-export async function acceptNda(email: string) {
-  const supabase = getSupabase();
-
-  const { data } = await supabase
-    .from("investors")
-    .update({
-      status: "APPROVED",
-      nda_accepted_at: new Date().toISOString(),
+    .insert({
+      full_name: input.full_name,
+      email: input.email,
+      role: input.role,
+      firm: input.firm,
+      notes: input.notes ?? null,
     })
-    .eq("email", email)
     .select()
     .single();
 
-  await audit(email, "NDA_ACCEPTED");
-  return data;
+  return data as Investor;
 }
 
-/* =======================
-   Admin
-======================= */
+export function isExpired(inv: Investor): boolean {
+  if (!inv.expires_at) return false;
+  return new Date(inv.expires_at) < new Date();
+}
 
-export async function approveInvestor(email: string, ttlDays = 30) {
-  const supabase = getSupabase();
+/* ───────────────── Admin lifecycle ───────────────── */
 
-  const expiresAt = new Date(
-    Date.now() + ttlDays * 86400000
-  ).toISOString();
-
-  const { data } = await supabase
+export async function approveInvestor(email: string) {
+  const supabase = supabaseAdmin();
+  await supabase
     .from("investors")
-    .update({
-      status: "PENDING_NDA",
-      approved_at: new Date().toISOString(),
-      expires_at: expiresAt,
-    })
-    .eq("email", email)
-    .select()
-    .single();
+    .update({ approved_at: new Date().toISOString() })
+    .eq("email", email);
+}
 
-  await audit(email, "APPROVED", { ttlDays });
-  await notify(email, "Investor access approved", "Your access is approved.");
-  return data;
+export async function rejectInvestor(email: string) {
+  const supabase = supabaseAdmin();
+  await supabase
+    .from("investors")
+    .update({ rejected_at: new Date().toISOString() })
+    .eq("email", email);
 }
 
 export async function revokeInvestor(email: string) {
-  const supabase = getSupabase();
-
-  const { data } = await supabase
+  const supabase = supabaseAdmin();
+  await supabase
     .from("investors")
-    .update({ status: "REJECTED" })
-    .eq("email", email)
-    .select()
-    .single();
-
-  await audit(email, "REVOKED");
-  await notify(email, "Investor access revoked", "Your access was revoked.");
-  return data;
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("email", email);
 }
 
-/* =======================
-   Audit
-======================= */
+/* ───────────────── Audit & analytics ───────────────── */
 
-export async function audit(email: string, action: string, meta?: any) {
-  const supabase = getSupabase();
-
+export async function audit(action: string, email: string, meta?: any) {
+  const supabase = supabaseAdmin();
   await supabase.from("investor_audit").insert({
-    email,
     action,
+    email,
     meta,
   });
 }
 
 export async function listAuditLog() {
-  const supabase = getSupabase();
-
+  const supabase = supabaseAdmin();
   const { data } = await supabase
     .from("investor_audit")
     .select("*")
@@ -148,25 +148,33 @@ export async function listAuditLog() {
   return data ?? [];
 }
 
-/* =======================
-   Email notifications
-======================= */
-
-async function emailNotificationsEnabled(email: string): Promise<boolean> {
-  const supabase = getSupabase();
-
-  const { data } = await supabase
-    .from("investor_preferences")
-    .select("email_notifications")
-    .eq("email", email)
-    .single();
-
-  if (!data) return true;
-  return data.email_notifications !== false;
+export async function listInvestors() {
+  const supabase = supabaseAdmin();
+  const { data } = await supabase.from("investors").select("*");
+  return data ?? [];
 }
 
-export async function notify(email: string, subject: string, text: string) {
-  const enabled = await emailNotificationsEnabled(email);
-  if (!enabled) return { ok: true, skipped: true };
-  return sendEmail({ to: email, subject, text });
+export async function listInvestorsForHeatmap() {
+  const supabase = supabaseAdmin();
+  const { data } = await supabase
+    .from("investors")
+    .select("country, engagement_score");
+
+  return data ?? [];
+}
+
+export async function setEngagementScore(email: string, score: number) {
+  const supabase = supabaseAdmin();
+  await supabase
+    .from("investors")
+    .update({ engagement_score: score })
+    .eq("email", email);
+}
+
+export async function markHotAlerted(email: string) {
+  const supabase = supabaseAdmin();
+  await supabase
+    .from("investors")
+    .update({ hot_alerted_at: new Date().toISOString() })
+    .eq("email", email);
 }
