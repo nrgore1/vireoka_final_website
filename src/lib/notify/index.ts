@@ -1,32 +1,39 @@
 import { sendEmail } from "@/lib/email";
 
-type InvestorRequestEmailInput = {
+export type InvestorRequestPayload = {
   email: string;
   name: string;
   role?: string;
-  firm?: string | null;
+  firm?: string;
 };
 
-export async function notifyInvestorRequestReceived({
-  email,
-  name,
-  role,
-  firm,
-}: InvestorRequestEmailInput) {
+export async function emailRequestReceived(payload: InvestorRequestPayload) {
+  const { email, name, role, firm } = payload;
+
   const html = `
-<p>Hi ${name},</p>
+<p>Dear ${name},</p>
 
-<p>We’ve received your request for <strong>investor access</strong> to Vireoka.</p>
+<p>
+Thank you for your interest in <strong>Vireoka</strong>.
+We have received your request for investor access.
+</p>
 
+<p><strong>Details submitted:</strong></p>
 <ul>
-  <li><strong>Email:</strong> ${email}</li>
-  ${role ? `<li><strong>Role:</strong> ${role}</li>` : ""}
-  ${firm ? `<li><strong>Firm:</strong> ${firm}</li>` : ""}
+  <li>Email: ${email}</li>
+  ${role ? `<li>Role: ${role}</li>` : ""}
+  ${firm ? `<li>Firm: ${firm}</li>` : ""}
 </ul>
 
-<p>Our team will review your request and get back to you shortly.</p>
+<p>
+Our team will review your request shortly.
+If approved, you will receive a follow-up email with instructions
+to review and accept the Non-Disclosure Agreement.
+</p>
 
-<p>— <strong>Vireoka Team</strong></p>
+<p>
+— <strong>The Vireoka Team</strong>
+</p>
 `.trim();
 
   await sendEmail({
@@ -35,8 +42,3 @@ export async function notifyInvestorRequestReceived({
     html,
   });
 }
-
-/**
- * Backward-compatible alias
- */
-export const emailRequestReceived = notifyInvestorRequestReceived;

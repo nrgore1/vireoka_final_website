@@ -178,3 +178,21 @@ export async function markHotAlerted(email: string) {
     .update({ hot_alerted_at: new Date().toISOString() })
     .eq("email", email);
 }
+
+/* ───────────────── Investor events (admin) ───────────────── */
+
+export async function listInvestorEvents() {
+  const sb = supabaseAdmin();
+
+  const { data, error } = await sb
+    .from("investor_events")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
