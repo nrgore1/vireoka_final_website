@@ -1,82 +1,83 @@
-import { Metadata } from "next";
+'use client';
 
-export const metadata: Metadata = {
-  title: "Investor Access Request | Vireoka",
-};
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function InvestorApplyPage() {
-  return (
-    <section className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="text-2xl font-semibold text-vireoka-indigo mb-6">
-        Request Investor Access
-      </h1>
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-      <p className="mb-8 text-slate-600">
-        Request access to Vireoka’s investor materials. Approved investors will
-        be invited to review materials under NDA.
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+
+    const payload = {
+      investor_name: formData.get('investor_name'),
+      email: formData.get('email'),
+      organization: formData.get('organization'),
+      role: formData.get('role'),
+      investor_type: formData.get('investor_type'),
+      turnstileToken: formData.get('turnstileToken') || null,
+    };
+
+    const res = await fetch('/api/investor-applications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const json = await res.json();
+
+    setLoading(false);
+
+    if (!res.ok) {
+      setError('We were unable to submit your application. Please try again.');
+      return;
+    }
+
+    router.push(`/investors/thank-you?ref=${json.reference_code ?? ''}`);
+  }
+
+  return (
+    <main className="mx-auto max-w-2xl px-6 py-16">
+      <h1 className="text-3xl font-semibold mb-4">Investor Access Application</h1>
+
+      <p className="text-gray-600 mb-8">
+        Submit your information below to request access to Vireoka’s investor materials.
+        All applications are reviewed by our internal team.
       </p>
 
-      <form
-        method="POST"
-        action="/api/investors/apply"
-        className="space-y-6"
-      >
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Full name
-          </label>
-          <input
-            name="name"
-            required
-            className="w-full rounded-md border px-3 py-2"
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <input name="investor_name" required placeholder="Full name" className="input" />
+        <input name="email" type="email" required placeholder="Email address" className="input" />
+        <input name="organization" required placeholder="Organization / Firm" className="input" />
+        <input name="role" required placeholder="Role / Title" className="input" />
 
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Email address
-          </label>
-          <input
-            type="email"
-            name="email"
-            required
-            className="w-full rounded-md border px-3 py-2"
-          />
-        </div>
+        <select name="investor_type" required className="input">
+          <option value="">Investor type</option>
+          <option value="VC">Venture Capital</option>
+          <option value="Family Office">Family Office</option>
+          <option value="Angel">Angel Investor</option>
+          <option value="Corporate">Corporate / Strategic</option>
+        </select>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Firm / Organization
-          </label>
-          <input
-            name="organization"
-            className="w-full rounded-md border px-3 py-2"
-          />
-        </div>
+        {/* Turnstile token injected client-side if enabled */}
+        <input type="hidden" name="turnstileToken" />
 
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Notes (optional)
-          </label>
-          <textarea
-            name="notes"
-            rows={3}
-            className="w-full rounded-md border px-3 py-2"
-          />
-        </div>
+        {error && <p className="text-red-600">{error}</p>}
 
-        {/* ✅ SUBMIT BUTTON (missing before) */}
-        <div className="pt-4">
-          <button
-            type="submit"
-            className="inline-flex items-center rounded-md bg-vireoka-indigo
-                       px-5 py-2.5 text-sm font-medium text-white
-                       hover:bg-vireoka-indigo/90"
-          >
-            Request access
-          </button>
-        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-md bg-black text-white py-3 font-medium disabled:opacity-50"
+        >
+          {loading ? 'Submitting…' : 'Submit application'}
+        </button>
       </form>
-    </section>
+    </main>
   );
 }

@@ -64,16 +64,6 @@ export type CreateInvestorInput = {
   notes?: string;
 };
 
-export async function getInvestorByEmail(email: string) {
-  const supabase = supabaseAdmin();
-  const { data } = await supabase
-    .from("investors")
-    .select("*")
-    .eq("email", email)
-    .single();
-
-  return data as Investor | null;
-}
 
 export async function createOrGetInvestor(input: CreateInvestorInput) {
   const supabase = supabaseAdmin();
@@ -195,4 +185,32 @@ export async function listInvestorEvents() {
   }
 
   return data ?? [];
+}
+
+/* ───────────────── Investor lookup (by session) ───────────────── */
+
+export async function getInvestorById(id: string) {
+  const sb = supabaseAdmin();
+
+  const { data, error } = await sb
+    .from("investors")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+export async function getInvestorByEmail(email: string) {
+  const sb = supabaseAdmin();
+
+  const { data, error } = await sb
+    .from("investors")
+    .select("*")
+    .eq("email", email)
+    .single();
+
+  if (error) return null;
+  return data;
 }

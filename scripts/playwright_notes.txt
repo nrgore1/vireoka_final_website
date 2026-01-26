@@ -1,0 +1,10 @@
+To run Playwright tests:
+
+1) Install:
+   npm i -D @playwright/test
+
+2) Install browsers (one-time):
+   npx playwright install
+
+3) Run tests:
+   npx playwright test

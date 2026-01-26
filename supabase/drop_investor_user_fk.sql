@@ -1,0 +1,2 @@
+alter table investor_applications
+drop constraint if exists investor_applications_user_id_fkey;

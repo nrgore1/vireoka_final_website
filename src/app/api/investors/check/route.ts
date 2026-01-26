@@ -1,27 +1,15 @@
-export const runtime = "nodejs";
-
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { getInvestorByEmail } from "@/lib/investors/service";
 
-export async function GET() {
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user?.email) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+export async function POST(req: Request) {
+  const { email } = await req.json();
+  if (!email) {
+    return NextResponse.json({ eligible: false });
   }
 
-  const { data } = await supabase
-    .from("investors")
-    .select("status")
-    .eq("email", user.email)
-    .single();
+  const investor = await getInvestorByEmail(email);
 
-  if (data?.status !== "approved") {
-    return NextResponse.json({ error: "Not approved" }, { status: 403 });
-  }
-
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    eligible: Boolean(investor && investor.status === "approved"),
+  });
 }

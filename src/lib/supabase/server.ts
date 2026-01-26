@@ -1,28 +1,51 @@
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-export async function createSupabaseServerClient() {
-  const cookieStore = await cookies();
+/**
+ * Server-side Supabase client (service role).
+ *
+ * CANONICAL:
+ *   - supabaseServerAdmin()
+ *
+ * BACKWARD-COMPAT:
+ *   - supabaseServer()  ← alias for legacy imports
+ *
+ * IMPORTANT:
+ * - SUPABASE_SERVICE_ROLE_KEY must NEVER be exposed to the browser
+ * - This file is safe to import from server components / API routes only
+ */
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          for (const c of cookiesToSet) {
-            cookieStore.set(c.name, c.value, c.options);
-          }
-        },
-      },
-    }
-  );
+let _admin: SupabaseClient | null = null;
+
+function createAdminClient(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceKey) {
+    throw new Error(
+      'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY'
+    );
+  }
+
+  return createClient(url, serviceKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }
 
 /**
- * Backward-compatible alias
+ * Canonical admin client
  */
-export const supabaseServer = createSupabaseServerClient;
+export function supabaseServerAdmin(): SupabaseClient {
+  if (!_admin) {
+    _admin = createAdminClient();
+  }
+  return _admin;
+}
+
+/**
+ * Legacy alias (DO NOT REMOVE)
+ * Used by older files such as Watermark.tsx
+ */
+export const supabaseServer = supabaseServerAdmin;

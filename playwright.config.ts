@@ -1,16 +1,10 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  testDir: "./tests",
-  snapshotDir: "./tests/__snapshots__",
+  testDir: './tests',
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
-    viewport: { width: 1440, height: 900 },
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+    trace: 'retain-on-failure',
   },
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  timeout: 60_000,
 });

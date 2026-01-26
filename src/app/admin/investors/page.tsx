@@ -1,58 +1,46 @@
-"use client";
+import { createClient } from '@supabase/supabase-js';
 
-import { useEffect, useState } from "react";
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-export default function AdminInvestors() {
-  const [investors, setInvestors] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
-
-  async function load() {
-    const inv = await fetch("/api/admin/investors").then((r) => r.json());
-    const s = await fetch("/api/admin/investors/analytics").then((r) => r.json());
-    setInvestors(inv);
-    setStats(s);
-  }
-
-  useEffect(() => { load(); }, []);
-
-  async function approve(email: string) {
-    await fetch("/api/admin/investors/approve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    await load();
-    alert("Approved and invite sent.");
-  }
+export default async function AdminInvestorsPage() {
+  const { data } = await supabase
+    .from('investor_applications')
+    .select('*')
+    .order('created_at', { ascending: false });
 
   return (
-    <main style={{ padding: 40 }}>
-      <h1>Investor Requests</h1>
+    <main className="p-8">
+      <h1 className="text-2xl font-semibold mb-6">Investor Applications</h1>
 
-      {stats && (
-        <p>
-          Total: <strong>{stats.total}</strong> · Approved: <strong>{stats.approved}</strong> · NDA accepted: <strong>{stats.ndaAccepted}</strong>
-        </p>
-      )}
-
-      <div style={{ marginTop: 16 }}>
-        {investors.map((i) => (
-          <div key={i.email} style={{ padding: 12, borderBottom: "1px solid #eee" }}>
-            <div><strong>{i.full_name || "-"}</strong></div>
-            <div>{i.email}</div>
-            <div>{i.role || "-"} · {i.firm || "-"}</div>
-            <div>
-              Approved: {i.approved_at ? "Yes" : "No"} · NDA: {i.nda_accepted_at ? "Yes" : "No"}
-            </div>
-
-            {!i.approved_at && (
-              <button style={{ marginTop: 8 }} onClick={() => approve(i.email)}>
-                Approve & Send Invite
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
+      <table className="w-full border">
+        <thead>
+          <tr className="bg-gray-100">
+            <th>Name</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {data?.map(app => (
+            <tr key={app.id} className="border-t">
+              <td>{app.investor_name}</td>
+              <td>{app.email}</td>
+              <td>{app.status}</td>
+              <td className="space-x-2">
+                <form action="/api/admin/investor-applications" method="POST">
+                  <input type="hidden" name="id" value={app.id} />
+                  <button name="action" value="approved">Approve</button>
+                  <button name="action" value="rejected">Reject</button>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </main>
   );
 }

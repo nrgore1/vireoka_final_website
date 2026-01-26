@@ -1,0 +1,114 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabaseBrowser } from "@/lib/supabase/browser";
+import { submitInvestorApplication } from "@/lib/investor/submitApplication";
+
+export default function InvestorApplyPage() {
+  const supabase = supabaseBrowser();
+  const router = useRouter();
+
+  const [form, setForm] = useState({
+    investor_name: "",
+    email: "",
+    organization: "",
+    role: "",
+    investor_type: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      await submitInvestorApplication(supabase, form);
+      router.push("/investors/thank-you");
+    } catch (err) {
+      console.error(err);
+      setError(
+        "We couldn’t submit your application right now. Please try again in a moment."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="mx-auto max-w-xl px-4 py-16">
+      <h1 className="mb-2 text-2xl font-semibold">
+        Apply for Investor Access
+      </h1>
+
+      <p className="mb-6 text-sm text-gray-600">
+        Please provide the information below. If approved, you will receive an
+        invitation to review and accept our NDA.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          required
+          placeholder="Full name"
+          className="w-full rounded border px-3 py-2"
+          value={form.investor_name}
+          onChange={(e) =>
+            setForm({ ...form, investor_name: e.target.value })
+          }
+        />
+
+        <input
+          required
+          type="email"
+          placeholder="Work email"
+          className="w-full rounded border px-3 py-2"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+        />
+
+        <input
+          required
+          placeholder="Organization"
+          className="w-full rounded border px-3 py-2"
+          value={form.organization}
+          onChange={(e) =>
+            setForm({ ...form, organization: e.target.value })
+          }
+        />
+
+        <input
+          placeholder="Role (e.g. Partner, Principal)"
+          className="w-full rounded border px-3 py-2"
+          value={form.role}
+          onChange={(e) => setForm({ ...form, role: e.target.value })}
+        />
+
+        <input
+          placeholder="Investor type (Angel, VC, Family Office)"
+          className="w-full rounded border px-3 py-2"
+          value={form.investor_type}
+          onChange={(e) =>
+            setForm({ ...form, investor_type: e.target.value })
+          }
+        />
+
+        {error && (
+          <p className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-4 w-full rounded bg-vireoka-indigo px-4 py-2 font-medium text-white hover:opacity-90 disabled:opacity-60"
+        >
+          {loading ? "Submitting…" : "Submit application"}
+        </button>
+      </form>
+    </main>
+  );
+}

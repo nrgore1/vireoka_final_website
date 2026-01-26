@@ -1,13 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 /**
- * Next.js 16+ uses "proxy.ts" instead of "middleware.ts".
- * The exported function MUST be named `proxy`.
+ * Global proxy (formerly middleware).
+ * This is a no-op pass-through proxy.
+ * Required by Next.js when proxy.ts exists.
  */
-export function proxy(_req: NextRequest) {
+export function proxy(req: NextRequest) {
   return NextResponse.next();
 }
-
-export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
-};

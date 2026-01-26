@@ -1,26 +1,28 @@
 import { NextResponse } from "next/server";
 import { verifyInvestorSession } from "@/lib/investorSession";
-import {
-  getInvestorByEmail,
-  isExpired,
-  needsNdaReaccept,
-} from "@/lib/investorStore";
+import { getInvestorByEmail } from "@/lib/investorStore";
 
 export async function GET() {
-  const sess = await verifyInvestorSession();
-  if (!sess) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await verifyInvestorSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: "Not authenticated" },
+      { status: 401 }
+    );
   }
 
-  const inv = await getInvestorByEmail(sess.email);
-  if (!inv) {
-    return NextResponse.json({ error: "Investor not found" }, { status: 404 });
+  // ✅ Correct: resolve investor via email
+  const investor = await getInvestorByEmail(session.email);
+  if (!investor) {
+    return NextResponse.json(
+      { error: "Investor not found" },
+      { status: 404 }
+    );
   }
 
   return NextResponse.json({
-    email: inv.email,
-    approved: !!inv.approved_at,
-    expired: isExpired(inv),
-    needsNda: needsNdaReaccept(inv),
+    id: investor.id,
+    name: investor.full_name,
+    approved: Boolean(investor.approved_at),
   });
 }
