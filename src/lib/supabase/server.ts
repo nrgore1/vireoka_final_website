@@ -1,51 +1,33 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
 
 /**
- * Server-side Supabase client (service role).
- *
- * CANONICAL:
- *   - supabaseServerAdmin()
- *
- * BACKWARD-COMPAT:
- *   - supabaseServer()  ← alias for legacy imports
- *
- * IMPORTANT:
- * - SUPABASE_SERVICE_ROLE_KEY must NEVER be exposed to the browser
- * - This file is safe to import from server components / API routes only
+ * Next.js 16+: cookies() is async and must be awaited.
+ * This helper returns a Supabase server client wired to Next cookies.
  */
+export async function supabaseServer() {
+  const cookieStore = await cookies();
 
-let _admin: SupabaseClient | null = null;
-
-function createAdminClient(): SupabaseClient {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !serviceKey) {
-    throw new Error(
-      'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY'
-    );
-  }
-
-  return createClient(url, serviceKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          // cookieStore.getAll() exists once cookies() is awaited
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // In some server component contexts Next disallows setting cookies.
+            // It's fine; auth reads still work.
+          }
+        },
+      },
+    }
+  );
 }
-
-/**
- * Canonical admin client
- */
-export function supabaseServerAdmin(): SupabaseClient {
-  if (!_admin) {
-    _admin = createAdminClient();
-  }
-  return _admin;
-}
-
-/**
- * Legacy alias (DO NOT REMOVE)
- * Used by older files such as Watermark.tsx
- */
-export const supabaseServer = supabaseServerAdmin;

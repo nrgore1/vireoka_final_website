@@ -1,25 +1,38 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/adminGuard";
-import { rejectInvestor } from "@/lib/investorStore";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { rateLimitOrThrow } from "@/lib/rateLimit";
+import { requireAdminOrThrow } from "@/lib/adminGuard";
 
-const Schema = z.object({
-  email: z.string().email(),
-  reason: z.string().optional(),
-});
+const Schema = z.object({ email: z.string().email() });
 
 export async function POST(req: Request) {
-  await requireAdmin();
+try {
+await requireAdminOrThrow();
+} catch {
+return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+}
 
-  const body = await req.json();
-  const parsed = Schema.safeParse(body);
+try {
+rateLimitOrThrow("admin_reject_investor", 60, 60_000);
+} catch {
+return NextResponse.json({ ok: false, error: "Too many requests" }, { status: 429 });
+}
 
-  if (!parsed.success) {
-    return NextResponse.json({ ok: false }, { status: 400 });
-  }
+const parsed = Schema.safeParse(await req.json().catch(() => null));
+if (!parsed.success) {
+return NextResponse.json({ ok: false, error: "Invalid email" }, { status: 400 });
+}
 
-  // Reject is a command; reason can be logged later if needed
-  await rejectInvestor(parsed.data.email.toLowerCase());
+const { email } = parsed.data;
+const sb = supabaseAdmin();
 
-  return NextResponse.json({ ok: true });
+await sb.from("investor_requests").update({ status: "rejected" }).eq("email", email);
+await sb.from("investors").upsert({
+email,
+rejected_at: new Date().toISOString(),
+approved_at: null,
+});
+
+return NextResponse.json({ ok: true });
 }

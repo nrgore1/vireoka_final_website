@@ -3,85 +3,123 @@
 import { useState } from "react";
 
 export default function RequestAccessPage() {
-  const [email, setEmail] = useState("");
-  const [firm, setFirm] = useState("");
-  const [message, setMessage] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    company: "",
+    message: "",
+  });
 
-  async function submit(e: React.FormEvent) {
+  const [loading, setLoading] = useState(false);
+  const [successId, setSuccessId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("loading");
+    setLoading(true);
+    setError(null);
+    setSuccessId(null);
 
-    const res = await fetch("/api/investors/request-access", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, firm, message }),
-    });
+    try {
+      const res = await fetch("/api/investors/request-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    if (res.ok) {
-      setStatus("success");
-    } else {
-      setStatus("error");
+      // 🔒 CRITICAL FIX — DO NOT PROCEED IF API FAILED
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
+      const data = await res.json();
+
+      if (!data?.ok) {
+        throw new Error(data?.error || "Request failed");
+      }
+
+      setSuccessId(data.referenceCode || data.id);
+      setForm({
+        fullName: "",
+        email: "",
+        company: "",
+        message: "",
+      });
+    } catch (err: any) {
+      console.error("Request access failed:", err);
+      setError("Submission failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 
-  return (
-    <div className="mx-auto max-w-md py-24 space-y-6">
-      <h1 className="text-2xl font-semibold">Request Investor Access</h1>
-
-      {status === "success" ? (
-        <p className="text-green-700 space-y-2">
-          <strong>Thank you for your interest in Vireoka.</strong><br />
-          Your access request has been received and is currently under review.
-          <br />
-          We’ll follow up with you once a decision has been made.
+  if (successId) {
+    return (
+      <div style={{ maxWidth: 700, margin: "40px auto" }}>
+        <h2>Thank you for your interest in Vireoka</h2>
+        <p>
+          Your investor access request has been successfully submitted.
         </p>
+        <p>
+          <strong>Reference code:</strong> {successId}
+        </p>
+        <p>
+          What happens next?
+        </p>
+        <ul>
+          <li>Internal review</li>
+          <li>NDA review</li>
+          <li>Investor access activation</li>
+        </ul>
+        <p>
+          Questions? Contact us at info@vireoka.com
+        </p>
+      </div>
+    );
+  }
 
-      ) : (
-        <form onSubmit={submit} className="space-y-4">
-          <input
-            required
-            type="email"
-            placeholder="you@firm.com"
-            className="w-full border rounded p-2"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+  return (
+    <div style={{ maxWidth: 700, margin: "40px auto" }}>
+      <h2>Investor Access Request</h2>
 
-          <input
-            type="text"
-            placeholder="Firm / Organization"
-            className="w-full border rounded p-2"
-            value={firm}
-            onChange={(e) => setFirm(e.target.value)}
-          />
-
-          <textarea
-            placeholder="Optional message"
-            className="w-full border rounded p-2"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-
-          <button
-            type="submit"
-            disabled={status === "loading"}
-            className="w-full bg-black text-white py-2 rounded"
-          >
-            {status === "loading" ? "Submitting…" : "Request Access"}
-          </button>
-
-          {status === "error" && (
-            <p className="text-red-600 text-sm">
-              Something went wrong. Please try again.
-            </p>
-          )}
-        </form>
+      {error && (
+        <div style={{ color: "crimson", marginBottom: 16 }}>
+          {error}
+        </div>
       )}
 
-      <p className="text-sm text-neutral-500">
-        Already invited? <a href="/login" className="underline">Log in</a>
-      </p>
+      <form onSubmit={handleSubmit}>
+        <input
+          required
+          placeholder="Full Name"
+          value={form.fullName}
+          onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+        />
+
+        <input
+          required
+          type="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+        />
+
+        <input
+          placeholder="Company"
+          value={form.company}
+          onChange={(e) => setForm({ ...form, company: e.target.value })}
+        />
+
+        <textarea
+          placeholder="Message"
+          value={form.message}
+          onChange={(e) => setForm({ ...form, message: e.target.value })}
+        />
+
+        <button disabled={loading} type="submit">
+          {loading ? "Submitting..." : "Request Access"}
+        </button>
+      </form>
     </div>
   );
 }

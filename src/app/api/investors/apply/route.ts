@@ -1,54 +1,86 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { randomUUID } from "crypto";
+
 export const runtime = "nodejs";
 
-import { NextResponse } from "next/server";
-import { z } from "zod";
-import { createOrGetInvestor, audit } from "@/lib/investorStore";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { sendEmail } from "@/lib/email";
+function getIp(req: Request) {
+  const xf = req.headers.get("x-forwarded-for");
+  if (xf) return xf.split(",")[0].trim();
+  return req.headers.get("x-real-ip") || null;
+}
 
-const Schema = z.object({
-  full_name: z.string().min(2),
-  email: z.string().email(),
-  role: z.string().min(2),
-  firm: z.string().min(2),
-  notes: z.string().optional(),
-});
+function isMissingColumnError(errMsg: string) {
+  const msg = (errMsg || "").toLowerCase();
+  return (
+    msg.includes("could not find the") ||
+    msg.includes("schema cache") ||
+    msg.includes("column") && msg.includes("not") && msg.includes("schema")
+  );
+}
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  const parsed = Schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
+  try {
+    const body = await req.json().catch(() => ({}));
+
+    const fullName = String(body.fullName || "").trim();
+    const email = String(body.email || "").trim();
+    const company = String(body.company || "").trim() || null;
+    const message = String(body.message || "").trim() || null;
+
+    if (!fullName || !email) {
+      return NextResponse.json({ ok: false, error: "Missing name or email" }, { status: 400 });
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceKey) {
+      return NextResponse.json({ ok: false, error: "Server misconfigured" }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
+    const id = randomUUID();
+    const referenceCode = randomUUID();
+    const ip = getIp(req);
+    const userAgent = req.headers.get("user-agent") || null;
+
+    const baseRow: any = {
+      id,
+      kind: "APPLY",
+      status: "NEW",
+      full_name: fullName,
+      email,
+      company,
+      message,
+      ip,
+      user_agent: userAgent,
+    };
+
+    const extendedRow: any = {
+      ...baseRow,
+      reference_code: referenceCode,
+      environment: process.env.NODE_ENV === "production" ? "production" : "development",
+    };
+
+    // 1) Try insert with new columns
+    let { error } = await supabase.from("investor_leads").insert(extendedRow);
+
+    // 2) Fallback: retry without new columns if schema cache/missing column
+    if (error && isMissingColumnError(error.message)) {
+      ({ error } = await supabase.from("investor_leads").insert(baseRow));
+    }
+
+    if (error) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    }
+
+    // Return referenceCode even if DB doesn't store it yet (best effort)
+    return NextResponse.json({ ok: true, id, referenceCode });
+  } catch (err: any) {
+    return NextResponse.json(
+      { ok: false, error: "Server error", detail: String(err?.message || err) },
+      { status: 500 }
+    );
   }
-
-  const inv = await createOrGetInvestor(parsed.data);
-
-  const sb = supabaseAdmin();
-  await sb.from("investor_events").insert({
-    email: inv.email,
-    event: "APPLY",
-    path: "/investors",
-    meta: { firm: inv.firm, role: inv.role },
-  });
-
-  await audit(inv.email, "APPLIED", { firm: inv.firm, role: inv.role });
-
-  // Notify admin (optional)
-  const adminTo = process.env.INVESTOR_FROM_EMAIL;
-  if (adminTo) {
-    await sendEmail({
-      to: adminTo,
-      subject: `Investor request: ${inv.full_name} (${inv.email})`,
-      html: `<p>New investor access request.</p>
-             <ul>
-               <li><b>Name:</b> ${inv.full_name ?? ""}</li>
-               <li><b>Email:</b> ${inv.email}</li>
-               <li><b>Role:</b> ${inv.role ?? ""}</li>
-               <li><b>Firm:</b> ${inv.firm ?? ""}</li>
-             </ul>
-             <p>Review in admin dashboard.</p>`,
-    });
-  }
-
-  return NextResponse.json({ ok: true });
 }

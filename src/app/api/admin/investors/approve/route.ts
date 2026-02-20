@@ -5,35 +5,55 @@ import { createInviteToken } from "@/lib/inviteToken";
 import { sendInvestorApprovedEmail } from "@/lib/investorNotifications";
 import { INVITE_TTL_HOURS } from "@/lib/nda";
 import { rateLimitOrThrow } from "@/lib/rateLimit";
+import { requireAdminOrThrow } from "@/lib/adminGuard";
 
 const Schema = z.object({ email: z.string().email() });
 
 export async function POST(req: Request) {
-  try {
-    rateLimitOrThrow("admin_approve_investor", 60, 60_000);
-  } catch {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-  }
+try {
+await requireAdminOrThrow();
+} catch {
+return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+}
 
-  const parsed = Schema.safeParse(await req.json());
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid email" }, { status: 400 });
-  }
+try {
+rateLimitOrThrow("admin_approve_investor", 60, 60_000);
+} catch {
+return NextResponse.json({ ok: false, error: "Too many requests" }, { status: 429 });
+}
 
-  const token = createInviteToken();
-  const expiresAt = new Date(Date.now() + INVITE_TTL_HOURS * 60 * 60 * 1000).toISOString();
+const parsed = Schema.safeParse(await req.json().catch(() => null));
+if (!parsed.success) {
+return NextResponse.json({ ok: false, error: "Invalid email" }, { status: 400 });
+}
 
-  const supabase = supabaseAdmin();
-  await supabase
-    .from("investors")
-    .update({
-      approved_at: new Date().toISOString(),
-      invite_token: token,
-      invite_token_expires_at: expiresAt,
-    })
-    .eq("email", parsed.data.email);
+const { email } = parsed.data;
 
-  await sendInvestorApprovedEmail(parsed.data.email, token);
+const token = createInviteToken();
+const expiresAt = new Date(Date.now() + INVITE_TTL_HOURS * 60 * 60 * 1000).toISOString();
 
-  return NextResponse.json({ ok: true });
+const sb = supabaseAdmin();
+
+// Mark request approved (if exists)
+await sb.from("investor_requests").update({ status: "approved" }).eq("email", email);
+
+// Upsert investor record + invite token
+await sb.from("investors").upsert({
+email,
+approved_at: new Date().toISOString(),
+rejected_at: null,
+revoked_at: null,
+expires_at: expiresAt,
+});
+
+await sb.from("investor_invites").insert({
+email,
+token,
+expires_at: expiresAt,
+});
+
+// Send email invite (existing helper)
+await sendInvestorApprovedEmail({ email, token, expiresAt });
+
+return NextResponse.json({ ok: true });
 }
