@@ -1,26 +1,36 @@
-import { Resend } from 'resend';
+import { sendEmail } from "@/lib/email/resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
-
+/**
+ * Approval email for investor applications (used by /api/admin/investor-applications).
+ * Accepts the legacy call shape: { email, ndaUrl, expiresHours }.
+ */
 export async function sendApprovalEmail(params: {
   email: string;
   ndaUrl: string;
-  expiresHours: number;
+  expiresHours?: number;
 }) {
-  const { email, ndaUrl, expiresHours } = params;
+  const email = String(params.email || "").trim();
+  const ndaUrl = String(params.ndaUrl || "").trim();
+  const expiresHours = typeof params.expiresHours === "number" ? params.expiresHours : 72;
 
-  await resend.emails.send({
-    from: 'Vireoka <investors@vireoka.com>',
-    to: email,
-    subject: 'Vireoka Investor Access – NDA Review Required',
-    html: `
-      <p>Thank you for your interest in Vireoka.</p>
-      <p>Your investor access request has been approved pending NDA completion.</p>
-      <p><strong>Action required:</strong> Please review and sign the NDA using the secure link below:</p>
-      <p><a href="${ndaUrl}">Review & Sign NDA</a></p>
-      <p>This link expires in <strong>${expiresHours} hours</strong>.</p>
-      <p>Once signed, your investor portal access will be activated and you will be able to log in.</p>
-      <p>— Vireoka Team</p>
-    `,
-  });
+  if (!email || !ndaUrl) {
+    return { ok: false as const, error: "Missing email or ndaUrl" };
+  }
+
+  const subject = "Vireoka — NDA Ready for Signature";
+  const html = `
+    <div style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5">
+      <h2 style="margin:0 0 10px 0">Your NDA is ready</h2>
+      <p>Please review and sign the NDA using the secure link below:</p>
+      <p><a href="${ndaUrl}" target="_blank" rel="noreferrer">${ndaUrl}</a></p>
+      <p style="margin-top:14px;font-size:12px;opacity:.75">
+        This link expires in approximately ${expiresHours} hours.
+      </p>
+      <p style="margin-top:16px">
+        Questions? Contact us at <a href="mailto:info@vireoka.com">info@vireoka.com</a>.
+      </p>
+    </div>
+  `;
+
+  return sendEmail({ to: email, subject, html });
 }

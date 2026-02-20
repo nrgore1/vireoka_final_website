@@ -1,82 +1,45 @@
-import { Resend } from "resend";
+import { getResend } from "@/lib/email/resend";
 
-// Accepts: "email@example.com" OR "Name <email@example.com>"
-const SIMPLE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const NAME_ANGLE_RE = /^.+<\s*[^\s@]+@[^\s@]+\.[^\s@]+\s*>$/;
-
-function isValidFrom(v: string) {
-  const s = v.trim();
-  return SIMPLE_EMAIL_RE.test(s) || NAME_ANGLE_RE.test(s);
-}
-
-function isValidTo(v: string) {
-  return SIMPLE_EMAIL_RE.test(v.trim());
-}
-
-function canSend() {
-  return Boolean(
-    process.env.RESEND_API_KEY &&
-      process.env.INVESTOR_NOTIFY_EMAIL &&
-      process.env.FROM_EMAIL
-  );
-}
-
-export async function sendInvestorEmail(subject: string, html: string) {
-  if (!canSend()) return { skipped: true as const };
-
-  const from = String(process.env.FROM_EMAIL || "").trim();
-  const to = String(process.env.INVESTOR_NOTIFY_EMAIL || "").trim();
-
-  // Guard: fail fast with a clear error instead of Resend 422
-  if (!isValidFrom(from)) {
-    return {
-      skipped: false as const,
-      error: `FROM_EMAIL invalid: "${from}". Must be "email@example.com" or "Name <email@example.com>".`,
-    };
-  }
-  if (!isValidTo(to)) {
-    return {
-      skipped: false as const,
-      error: `INVESTOR_NOTIFY_EMAIL invalid: "${to}". Must be "email@example.com".`,
-    };
-  }
-
-  const resend = new Resend(process.env.RESEND_API_KEY!);
-
-  const res = await resend.emails.send({
-    from,
-    to,
-    subject,
-    html,
-  });
-
-  return { skipped: false as const, res };
-}
-
-export function leadToHtml(title: string, payload: Record<string, any>) {
-  const rows = Object.entries(payload)
-    .map(
-      ([k, v]) =>
-        `<tr><td style="padding:6px 10px;border:1px solid #eee;"><b>${escapeHtml(
-          k
-        )}</b></td><td style="padding:6px 10px;border:1px solid #eee;">${escapeHtml(
-          String(v ?? "")
-        )}</td></tr>`
-    )
-    .join("");
+export function leadToHtml(payload: any) {
+  const safe = (v: any) =>
+    String(v ?? "")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
 
   return `
-  <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif">
-    <h2>${escapeHtml(title)}</h2>
-    <table style="border-collapse:collapse">${rows}</table>
-  </div>`;
+    <div style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5">
+      <h2 style="margin:0 0 10px 0">New Investor Lead</h2>
+      <p><strong>Kind:</strong> ${safe(payload.kind)}</p>
+      <p><strong>Name:</strong> ${safe(payload.fullName)}</p>
+      <p><strong>Email:</strong> ${safe(payload.email)}</p>
+      <p><strong>Company:</strong> ${safe(payload.company)}</p>
+      <p><strong>Message:</strong><br/>${safe(payload.message)}</p>
+    </div>
+  `;
 }
 
-function escapeHtml(s: string) {
-  return s
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+export async function sendInvestorEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+}) {
+  const resend = getResend();
+  const from = process.env.FROM_EMAIL;
+
+  if (!resend || !from) {
+    return { skipped: true as const, error: "Missing RESEND_API_KEY or FROM_EMAIL" };
+  }
+
+  const res: any = await resend.emails.send({
+    from,
+    to: params.to,
+    subject: params.subject,
+    html: params.html,
+  });
+
+  if (res?.error) {
+    return { skipped: false as const, error: res.error?.message || String(res.error) };
+  }
+
+  return { skipped: false as const, res };
 }

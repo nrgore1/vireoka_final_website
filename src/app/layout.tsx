@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import Analytics from "./Analytics";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: "Vireoka — Governable AI for Real-World Accountability",
   description:
     "Vireoka focuses on governance for agentic AI systems. We help ensure AI decisions are explainable, reviewable, and defensible in real-world, high-stakes environments.",
@@ -48,18 +49,12 @@ const nav = [
   { href: "/trust", label: "Trust" },
 ];
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="min-h-screen bg-white text-vireoka-graphite antialiased">
-        {/* Analytics */}
         <Analytics />
 
-        {/* Header */}
         <header className="border-b border-vireoka-line bg-white">
           <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
@@ -97,12 +92,8 @@ export default function RootLayout({
           </div>
         </header>
 
-        {/* Main */}
-        <main className="mx-auto max-w-6xl px-6 py-16">
-          {children}
-        </main>
+        <main className="mx-auto max-w-6xl px-6 py-16">{children}</main>
 
-        {/* Footer */}
         <footer className="border-t border-vireoka-line bg-vireoka-ash">
           <div className="mx-auto max-w-6xl px-6 py-12 grid gap-8 md:grid-cols-3 text-sm">
             <div>
@@ -115,9 +106,15 @@ export default function RootLayout({
             <div>
               <p className="font-medium text-vireoka-indigo">Explore</p>
               <ul className="mt-2 space-y-1 text-neutral-600">
-                <li><Link href="/resources">Resources</Link></li>
-                <li><Link href="/leadership">Leadership</Link></li>
-                <li><Link href="/trust">Trust & Governance</Link></li>
+                <li>
+                  <Link href="/resources">Resources</Link>
+                </li>
+                <li>
+                  <Link href="/leadership">Leadership</Link>
+                </li>
+                <li>
+                  <Link href="/trust">Trust & Governance</Link>
+                </li>
               </ul>
             </div>
 

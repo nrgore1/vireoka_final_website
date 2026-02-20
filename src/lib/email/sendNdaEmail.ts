@@ -1,30 +1,27 @@
-import { Resend } from "resend";
+import { getResend } from "./resend";
 
-/**
- * Minimal implementation so builds succeed.
- * You can expand this to send SignWell links later.
- */
 export async function sendNdaEmail(params: {
   to: string;
-  subject?: string;
+  subject: string;
   html: string;
 }) {
-  const apiKey = process.env.RESEND_API_KEY;
+  const resend = getResend();
   const from = process.env.FROM_EMAIL;
 
-  if (!apiKey || !from) {
-    return { ok: false, error: "Missing RESEND_API_KEY or FROM_EMAIL" };
+  if (!resend || !from) {
+    return { skipped: true as const, error: "Missing RESEND_API_KEY or FROM_EMAIL" };
   }
 
-  const resend = new Resend(apiKey);
-
-  const res = await resend.emails.send({
+  const res: any = await resend.emails.send({
     from,
     to: params.to,
-    subject: params.subject || "Vireoka NDA",
+    subject: params.subject,
     html: params.html,
   });
 
-  if ((res as any)?.error) return { ok: false, error: (res as any).error };
-  return { ok: true, res };
+  if (res?.error) {
+    return { skipped: false as const, error: res.error?.message || String(res.error) };
+  }
+
+  return { skipped: false as const, res };
 }
