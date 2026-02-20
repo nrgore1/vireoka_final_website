@@ -1,59 +1,45 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { createInviteToken } from "@/lib/inviteToken";
-import { sendInvestorApprovedEmail } from "@/lib/investorNotifications";
-import { INVITE_TTL_HOURS } from "@/lib/nda";
-import { rateLimitOrThrow } from "@/lib/rateLimit";
-import { requireAdminOrThrow } from "@/lib/adminGuard";
+import { createClient } from "@supabase/supabase-js";
+import { sendInvestorApprovalEmail } from "@/lib/email/investorEmailService";
 
-const Schema = z.object({ email: z.string().email() });
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-try {
-await requireAdminOrThrow();
-} catch {
-return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-}
+  try {
+    const body = await req.json().catch(() => ({}));
 
-try {
-rateLimitOrThrow("admin_approve_investor", 60, 60_000);
-} catch {
-return NextResponse.json({ ok: false, error: "Too many requests" }, { status: 429 });
-}
+    const leadId = String(body?.leadId || "").trim(); // recommended
+    const email = String(body?.email || "").trim();
+    const token = String(body?.token || "").trim();
 
-const parsed = Schema.safeParse(await req.json().catch(() => null));
-if (!parsed.success) {
-return NextResponse.json({ ok: false, error: "Invalid email" }, { status: 400 });
-}
+    if (!email || !token) {
+      return NextResponse.json({ ok: false, error: "Missing email or token" }, { status: 400 });
+    }
 
-const { email } = parsed.data;
+    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+    const verifyUrl = `${baseUrl}/investors/verify?token=${encodeURIComponent(token)}`;
 
-const token = createInviteToken();
-const expiresAt = new Date(Date.now() + INVITE_TTL_HOURS * 60 * 60 * 1000).toISOString();
+    const emailRes = await sendInvestorApprovalEmail({ to: email, verifyUrl });
 
-const sb = supabaseAdmin();
+    // Best-effort DB audit/status update
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (supabaseUrl && serviceKey && leadId) {
+      const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+      const patch: any = {
+        status: "QUALIFIED",
+      };
+      if (emailRes.ok) patch.approval_email_sent_at = new Date().toISOString();
+      else patch.approval_email_error = emailRes.error;
+      await supabase.from("investor_leads").update(patch).eq("id", leadId);
+    }
 
-// Mark request approved (if exists)
-await sb.from("investor_requests").update({ status: "approved" }).eq("email", email);
+    if (!emailRes.ok) {
+      return NextResponse.json({ ok: false, error: "Approval email failed", detail: emailRes.error }, { status: 500 });
+    }
 
-// Upsert investor record + invite token
-await sb.from("investors").upsert({
-email,
-approved_at: new Date().toISOString(),
-rejected_at: null,
-revoked_at: null,
-expires_at: expiresAt,
-});
-
-await sb.from("investor_invites").insert({
-email,
-token,
-expires_at: expiresAt,
-});
-
-// Send email invite (existing helper)
-await sendInvestorApprovedEmail({ email, token, expiresAt });
-
-return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, verifyUrl });
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, error: String(err?.message || err) }, { status: 500 });
+  }
 }

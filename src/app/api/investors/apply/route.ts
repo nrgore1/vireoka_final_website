@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
+import {
+  sendInvestorRequestConfirmation,
+  sendInternalNewLeadNotification,
+} from "@/lib/email/investorEmailService";
 
 export const runtime = "nodejs";
 
@@ -12,11 +16,7 @@ function getIp(req: Request) {
 
 function isMissingColumnError(errMsg: string) {
   const msg = (errMsg || "").toLowerCase();
-  return (
-    msg.includes("could not find the") ||
-    msg.includes("schema cache") ||
-    msg.includes("column") && msg.includes("not") && msg.includes("schema")
-  );
+  return msg.includes("schema cache") || msg.includes("could not find the");
 }
 
 export async function POST(req: Request) {
@@ -63,20 +63,51 @@ export async function POST(req: Request) {
       environment: process.env.NODE_ENV === "production" ? "production" : "development",
     };
 
-    // 1) Try insert with new columns
     let { error } = await supabase.from("investor_leads").insert(extendedRow);
-
-    // 2) Fallback: retry without new columns if schema cache/missing column
     if (error && isMissingColumnError(error.message)) {
       ({ error } = await supabase.from("investor_leads").insert(baseRow));
     }
-
     if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "Insert failed", detail: error.message }, { status: 500 });
     }
 
-    // Return referenceCode even if DB doesn't store it yet (best effort)
-    return NextResponse.json({ ok: true, id, referenceCode });
+    const [investorRes, internalRes] = await Promise.all([
+      sendInvestorRequestConfirmation({
+        to: email,
+        fullName,
+        kind: "APPLY",
+        referenceCode,
+      }),
+      sendInternalNewLeadNotification({
+        fullName,
+        email,
+        company,
+        message,
+        kind: "APPLY",
+        referenceCode,
+      }),
+    ]);
+
+    const updatePatch: any = {};
+    if (investorRes.ok) updatePatch.investor_confirm_email_sent_at = new Date().toISOString();
+    else updatePatch.investor_confirm_email_error = investorRes.error;
+
+    if (internalRes.ok) updatePatch.internal_notify_email_sent_at = new Date().toISOString();
+    else updatePatch.internal_notify_email_error = internalRes.error;
+
+    if (Object.keys(updatePatch).length) {
+      await supabase.from("investor_leads").update(updatePatch).eq("id", id);
+    }
+
+    return NextResponse.json({
+      ok: true,
+      id,
+      referenceCode,
+      fanout: {
+        investorEmail: investorRes,
+        internalEmail: internalRes,
+      },
+    });
   } catch (err: any) {
     return NextResponse.json(
       { ok: false, error: "Server error", detail: String(err?.message || err) },

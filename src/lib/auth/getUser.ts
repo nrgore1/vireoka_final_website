@@ -1,9 +1,7 @@
-import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export async function requireInvestor() {
+export async function getUser() {
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
-  if (!data?.user) redirect("/investors");
-  return data.user;
+  return data?.user ?? null;
 }

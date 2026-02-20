@@ -1,18 +1,16 @@
-import { requireInvestor } from '@/lib/auth/requireInvestor';
-import { getUser } from '@/lib/auth/getUser';
+import { requireInvestor } from "@/lib/auth/requireInvestor";
 
 export default async function InvestorPortal() {
-  const user = await getUser();
-  await requireInvestor(user.id);
+  const user = await requireInvestor();
 
   return (
     <main className="p-10">
-      <h1 className="text-2xl font-semibold">
-        Investor Portal
-      </h1>
-      <p className="mt-4">
-        Confidential materials available under NDA.
-      </p>
+      <h1 className="text-2xl font-semibold">Investor Portal</h1>
+      <p className="mt-2 opacity-80">Signed in as: {user.email}</p>
+
+      <div className="mt-6">
+        <p>Welcome to the Vireoka investor portal.</p>
+      </div>
     </main>
   );
 }

@@ -1,46 +1,70 @@
-import HubSpot from "@hubspot/api-client";
+import HubspotClient from "@hubspot/api-client";
 
-function canPush() {
-  return Boolean(process.env.HUBSPOT_ACCESS_TOKEN);
+type LeadPayload = Record<string, any>;
+
+function hubspotClient() {
+  const token = process.env.HUBSPOT_ACCESS_TOKEN;
+  if (!token) return null;
+
+  // This matches the SDK shape in your install:
+  // HubspotClient is a module with a Client class.
+  return new (HubspotClient as any).Client({ accessToken: token });
 }
 
-export async function pushToHubSpotContact(fields: {
-  email: string;
-  firstname?: string;
-  lastname?: string;
-  company?: string;
-  jobtitle?: string;
-  website?: string;
-  linkedin?: string;
-  investor_kind?: string;
-  investor_message?: string;
-}) {
-  if (!canPush()) return { skipped: true as const };
+export async function pushToHubSpotContact(payload: LeadPayload) {
+  const hubspot = hubspotClient();
+  if (!hubspot) return { skipped: true as const };
 
-  const hubspot = new HubSpot.Client({ accessToken: process.env.HUBSPOT_ACCESS_TOKEN! });
+  const email = String(payload.email || "").trim();
+  if (!email) return { skipped: true as const, error: "Missing email" };
 
-  const email = fields.email;
+  const fullName = String(payload.fullName || payload.full_name || "").trim();
+  const company = String(payload.company || "").trim();
+  const message = String(payload.message || "").trim();
+  const kind = String(payload.kind || "").trim() || "UNKNOWN";
 
+  // Search existing by email
   const search = await hubspot.crm.contacts.searchApi.doSearch({
     filterGroups: [
-      { filters: [{ propertyName: "email", operator: "EQ", value: email }] },
+      {
+        filters: [
+          {
+            propertyName: "email",
+            operator: "EQ" as any, // avoid enum typing differences across SDK versions
+            value: email,
+          },
+        ],
+      },
     ],
     properties: ["email"],
     limit: 1,
   });
 
-  const properties: Record<string, string> = {};
-  for (const [k, v] of Object.entries(fields)) {
-    if (v === undefined || v === null) continue;
-    properties[k] = String(v);
-  }
+  const existing = search?.results?.[0];
 
-  if (search.results?.length) {
-    const id = search.results[0].id;
-    const updated = await hubspot.crm.contacts.basicApi.update(id, { properties });
+  const props: Record<string, string> = {
+    email,
+    investor_kind: kind,
+  };
+
+  if (fullName) {
+    const parts = fullName.split(" ").filter(Boolean);
+    props.firstname = parts[0] || fullName;
+    props.lastname = parts.slice(1).join(" ") || " ";
+  }
+  if (company) props.company = company;
+  if (message) props.investor_message = message;
+
+  if (existing?.id) {
+    const updated = await hubspot.crm.contacts.basicApi.update(existing.id, {
+      properties: props,
+    });
     return { skipped: false as const, updated };
   }
 
-  const created = await hubspot.crm.contacts.basicApi.create({ properties });
+  const created = await hubspot.crm.contacts.basicApi.create({
+    properties: props,
+  });
+
   return { skipped: false as const, created };
 }

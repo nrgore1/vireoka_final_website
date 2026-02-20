@@ -6,3 +6,6 @@ export function supabaseBrowser() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 }
+
+// Compatibility alias for older imports
+export const supabaseClient = supabaseBrowser;
