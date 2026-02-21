@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/serverClients";
 import { generateToken, sha256 } from "@/lib/security/tokens";
+import { signInfoRequestToken } from "@/lib/security/inviteJwt";
 import { sendApprovalEmail } from "@/lib/email/sendApprovalEmail";
 import { sendRequestInfoEmail } from "@/lib/email/sendRequestInfoEmail";
 import { createNdaFromTemplate } from "@/lib/nda/signwell";
@@ -41,32 +42,23 @@ async function upsertInvestorFlexible(args: {
     expires_at: expiresAt,
   };
 
-  // Try several schemas in order; stop at the first that works
   const candidates: any[] = [
     { ...base, full_name: name, organization: org },
     { ...base, name, organization: org },
     { ...base, name, org },
     { ...base, full_name: name, company: org },
-    { ...base }, // minimal safe fallback
+    { ...base },
   ];
 
   let lastErr: any = null;
-
   for (const payload of candidates) {
     const { error } = await svc.from("investors").upsert(payload, { onConflict: "email" });
-    if (!error) return { ok: true as const, used: Object.keys(payload) };
+    if (!error) return { ok: true as const };
     lastErr = error;
-
-    // Only retry on schema/column errors; otherwise break early
     const msg = String(error.message || "");
-    const schemaErr =
-      msg.includes("Could not find the") ||
-      msg.includes("schema cache") ||
-      msg.includes("column") ||
-      msg.includes("does not exist");
+    const schemaErr = msg.includes("schema cache") || msg.includes("column") || msg.includes("does not exist");
     if (!schemaErr) break;
   }
-
   return { ok: false as const, error: lastErr?.message || "Investor upsert failed" };
 }
 
@@ -111,22 +103,25 @@ export async function POST(req: NextRequest) {
 
   const { data: app, error: appErr } = await svc
     .from("investor_applications")
-    .select("id,email,investor_name,organization,status,user_id,metadata")
+    .select("id,email,investor_name,organization,status,user_id,metadata,created_at")
     .eq("id", id)
     .single();
 
   if (appErr || !app) return NextResponse.json({ ok: false, error: appErr?.message || "Not found" }, { status: 404 });
 
   async function audit(act: string, metadata: any = {}) {
-    await svc.from("investor_application_audit_logs").insert({
-      application_id: id,
-      action: act,
-      performed_by: admin.userId,
-      metadata,
-    });
+    try {
+      await svc.from("investor_application_audit_logs").insert({
+        application_id: id,
+        action: act,
+        performed_by: admin.userId,
+        metadata,
+      });
+    } catch {}
   }
 
   const email = String(app.email).toLowerCase();
+  const origin = process.env.APP_ORIGIN || originFromReq(req);
 
   if (action === "reject") {
     await svc.from("investor_applications").update({ status: "rejected" }).eq("id", id);
@@ -135,19 +130,41 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "request_info") {
-    await svc.from("investor_applications").update({ status: "info_requested" }).eq("id", id);
-    await audit("info_requested");
+    const nowIso = new Date().toISOString();
 
-    const origin = process.env.APP_ORIGIN || originFromReq(req);
-
-    // Send a human message from the admin (if provided) to make the request actionable.
-    await sendRequestInfoEmail({
-      email,
-      statusUrl: `${origin}/investors/status`,
-      message,
+    const md: any = app.metadata || {};
+    const info_requests = Array.isArray(md.info_requests) ? md.info_requests : [];
+    info_requests.push({
+      requested_at: nowIso,
+      requested_by: admin.userId,
+      message: message ? String(message).slice(0, 8000) : "",
     });
 
-    await audit("info_request_email_sent", { message: message ? String(message).slice(0, 4000) : "" });
+    await svc
+      .from("investor_applications")
+      .update({ status: "info_requested", metadata: { ...md, info_requests }, updated_at: nowIso })
+      .eq("id", id);
+
+    await audit("info_requested", { message: message ? String(message).slice(0, 4000) : "" });
+
+    const jwt = await signInfoRequestToken(
+      { purpose: "info_request", application_id: id, email },
+      "7d"
+    );
+
+    const respondUrl = `${origin}/investors/respond?token=${encodeURIComponent(jwt)}`;
+    const statusUrl = `${origin}/investors/status`;
+
+    await sendRequestInfoEmail({
+      email,
+      name: app.investor_name ?? null,
+      message,
+      respondUrl,
+      statusUrl,
+      reviewSlaHours: 24,
+    });
+
+    await audit("info_request_email_sent", { requested_at: nowIso });
 
     return NextResponse.json({ ok: true });
   }
@@ -157,7 +174,6 @@ export async function POST(req: NextRequest) {
     await audit("approved");
   }
 
-  // Idempotency: if NDA already sent and not explicitly resend
   const { data: priorNda } = await svc
     .from("investor_application_audit_logs")
     .select("id,created_at")
@@ -173,7 +189,6 @@ export async function POST(req: NextRequest) {
 
   const expiresAt = new Date(Date.now() + TTL_HOURS * 60 * 60 * 1000).toISOString();
 
-  // ✅ Promote investor without assuming schema
   const up = await upsertInvestorFlexible({
     svc,
     email,
@@ -187,9 +202,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: up.error }, { status: 500 });
   }
 
-  const origin = process.env.APP_ORIGIN || originFromReq(req);
-
-  // Prefer SignWell if configured
   const signwellKey = process.env.SIGNWELL_API_KEY || "";
   const templateId = process.env.SIGNWELL_TEMPLATE_ID || "";
 
@@ -203,28 +215,13 @@ export async function POST(req: NextRequest) {
         metadata: { application_id: id, email },
       });
 
-      // Track SignWell docs if table exists; best-effort
-      try {
-        await svc.from("investor_nda_signwell").insert({
-          application_id: id,
-          email,
-          document_id: doc.id,
-          status: doc.status ?? "sent",
-        });
-      } catch (e) {
-        // ignore if table not created yet
-      }
-
       await audit("nda_signwell_sent", { document_id: doc.id });
       return NextResponse.json({ ok: true, nda: "signwell", document_id: doc.id });
     } catch (e: any) {
-      console.error("[admin approve] signwell error:", e?.message || e);
       await audit("nda_signwell_failed", { error: String(e?.message || e) });
-      // fall through to internal NDA
     }
   }
 
-  // Internal NDA fallback
   const rawToken = generateToken(32);
   const tokenHash = sha256(rawToken);
 
@@ -237,7 +234,8 @@ export async function POST(req: NextRequest) {
   if (ndaErr) return NextResponse.json({ ok: false, error: ndaErr.message }, { status: 500 });
 
   const ndaUrl = `${origin}/investors/nda?token=${encodeURIComponent(rawToken)}`;
-  await sendApprovalEmail({ email, ndaUrl, expiresHours: TTL_HOURS });
+  await sendApprovalEmail({ email, ndaUrl, expiresHours: TTL_HOURS, name: app.investor_name ?? null });
+
   await audit("nda_link_sent", { expires_at: expiresAt });
 
   return NextResponse.json({ ok: true, nda: "internal" });

@@ -33,6 +33,13 @@ type Row = {
   last_access: string | null;
 
   pending_extension_request: PendingExt | null;
+
+  latest_info_request_message?: string | null;
+  latest_info_request_at?: string | null;
+
+  latest_info_response_at?: string | null;
+  latest_info_response_message?: string | null;
+  latest_info_response_fields?: any | null;
 };
 
 function fmtDate(v: string | null) {
@@ -62,12 +69,22 @@ function pill(text: string, bg: string, fg: string) {
   );
 }
 
+function pretty(obj: any) {
+  try {
+    return JSON.stringify(obj, null, 2);
+  } catch {
+    return String(obj ?? "");
+  }
+}
+
 export default function DashboardClient() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("all");
   const [q, setQ] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [requestInfoOpen, setRequestInfoOpen] = useState(false);
   const [requestInfoId, setRequestInfoId] = useState<string | null>(null);
@@ -119,7 +136,7 @@ export default function DashboardClient() {
     const base: React.CSSProperties = {
       padding: "6px 10px",
       borderRadius: 10,
-      fontWeight: 700,
+      fontWeight: 800,
       cursor: disabled ? "not-allowed" : "pointer",
       opacity: disabled ? 0.6 : 1,
       border: "1px solid #e5e7eb",
@@ -157,8 +174,8 @@ export default function DashboardClient() {
       if (!r.ok || j?.ok === false) {
         const msg = j?.error || `Action failed: ${action}`;
         alert(msg);
-      } else {
-        if (j?.note) alert(String(j.note));
+      } else if (j?.note) {
+        alert(String(j.note));
       }
     } finally {
       setBusyId(null);
@@ -204,7 +221,7 @@ export default function DashboardClient() {
               <div>
                 <div style={{ fontWeight: 900, fontSize: 16 }}>Request additional information</div>
                 <div style={{ color: "#6b7280", fontSize: 12 }}>
-                  This message will be emailed to {requestInfoEmail || "the applicant"}.
+                  This will send a secure portal link to {requestInfoEmail || "the applicant"}.
                 </div>
               </div>
               <button
@@ -214,7 +231,7 @@ export default function DashboardClient() {
                   setRequestInfoEmail(null);
                   setRequestInfoMessage("");
                 }}
-                style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "6px 10px", fontWeight: 800 }}
+                style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "6px 10px", fontWeight: 900 }}
               >
                 Close
               </button>
@@ -225,7 +242,7 @@ export default function DashboardClient() {
                 value={requestInfoMessage}
                 onChange={(e) => setRequestInfoMessage(e.target.value)}
                 placeholder={
-                  "What do you need from the investor?\n\nExample:\n• Please share your accreditation status.\n• What is your intended use case for our materials?\n• What is your role/title and organization website?"
+                  "Write exactly what you need from the investor.\n\nExample:\n• Please confirm your accreditation status.\n• What is your intended use case?\n• Your role/title and firm website."
                 }
                 rows={8}
                 style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 12, padding: 10, fontSize: 13 }}
@@ -244,6 +261,7 @@ export default function DashboardClient() {
               >
                 Cancel
               </button>
+
               <button
                 disabled={!requestInfoId || busyId === requestInfoId}
                 onClick={async () => {
@@ -331,16 +349,76 @@ export default function DashboardClient() {
                     ? pill("info requested", "#ffedd5", "#9a3412")
                     : pill("submitted", "#fef9c3", "#854d0e");
 
+                const hasResponse =
+                  Boolean(r.latest_info_response_at) ||
+                  Boolean(r.latest_info_response_message) ||
+                  Boolean(r.latest_info_response_fields);
+
+                const isExpanded = expandedId === r.application_id;
+
                 return (
                   <tr key={r.application_id} style={{ borderTop: "1px solid #f3f4f6" }}>
                     <td style={cell}>
-                      <div style={{ fontWeight: 800 }}>
+                      <div style={{ fontWeight: 900 }}>
                         {r.investor_name || "—"} — {r.email}
                       </div>
                       <div style={{ color: "#6b7280", fontSize: 12 }}>{r.organization || "—"}</div>
                       <div style={{ color: "#6b7280", fontSize: 12 }}>
                         Ref: {r.reference_code || "—"} • Created: {fmtDate(r.application_created_at)}
                       </div>
+
+                      {hasResponse && (
+                        <div style={{ marginTop: 10 }}>
+                          <button
+                            onClick={() => setExpandedId(isExpanded ? null : r.application_id)}
+                            style={{
+                              border: "1px solid #e5e7eb",
+                              background: "#fff",
+                              borderRadius: 10,
+                              padding: "6px 10px",
+                              fontWeight: 800,
+                              cursor: "pointer",
+                            }}
+                          >
+                            {isExpanded ? "Hide investor response" : "View investor response"}
+                          </button>
+
+                          {isExpanded && (
+                            <div
+                              style={{
+                                marginTop: 8,
+                                border: "1px solid #e5e7eb",
+                                borderRadius: 12,
+                                padding: 10,
+                                background: "#fafafa",
+                              }}
+                            >
+                              <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 800 }}>
+                                Latest response received: {fmtDate(r.latest_info_response_at || null)}
+                              </div>
+
+                              {r.latest_info_response_fields ? (
+                                <pre
+                                  style={{
+                                    marginTop: 8,
+                                    whiteSpace: "pre-wrap",
+                                    fontSize: 12,
+                                    color: "#111827",
+                                  }}
+                                >
+                                  {pretty(r.latest_info_response_fields)}
+                                </pre>
+                              ) : null}
+
+                              {r.latest_info_response_message ? (
+                                <div style={{ marginTop: 8, fontSize: 13, whiteSpace: "pre-wrap" }}>
+                                  {r.latest_info_response_message}
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     <td style={cell}>{statusPill}</td>
@@ -385,7 +463,7 @@ export default function DashboardClient() {
                               setRequestInfoOpen(true);
                             }}
                             style={btnStyle("secondary", busy)}
-                            title="Request additional information from investor"
+                            title="Request additional information from investor (via portal link)"
                           >
                             Request Info
                           </button>
@@ -394,7 +472,10 @@ export default function DashboardClient() {
                         {canShowReject(r) && (
                           <button
                             disabled={busy}
-                            onClick={() => adminAction(r.application_id, "reject")}
+                            onClick={() => {
+                              const ok = confirm("Reject this investor application?");
+                              if (ok) adminAction(r.application_id, "reject");
+                            }}
                             style={btnStyle("danger", busy)}
                             title="Reject application"
                           >
@@ -402,16 +483,8 @@ export default function DashboardClient() {
                           </button>
                         )}
 
-                        {!canShowApprove(r) && !canShowResend(r) && !canShowRequestInfo(r) && !canShowReject(r) && (
-                          <span style={{ color: "#6b7280" }}>—</span>
-                        )}
+                        {busy && <div style={{ fontSize: 12, color: "#6b7280" }}>Working…</div>}
                       </div>
-
-                      {busy && (
-                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 6 }}>
-                          Working…
-                        </div>
-                      )}
                     </td>
                   </tr>
                 );

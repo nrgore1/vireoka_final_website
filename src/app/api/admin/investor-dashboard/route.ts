@@ -7,19 +7,20 @@ async function requireAdminSession() {
   const { data: auth } = await sb.auth.getUser();
   if (!auth?.user) return { ok: false as const, status: 401, error: "Unauthorized" };
 
-  const { data: profile } = await sb
-    .from("profiles")
-    .select("role")
-    .eq("id", auth.user.id)
-    .single();
-
+  const { data: profile } = await sb.from("profiles").select("role").eq("id", auth.user.id).single();
   if (!profile || profile.role !== "admin") return { ok: false as const, status: 403, error: "Forbidden" };
-  return { ok: true as const, userId: auth.user.id };
+
+  return { ok: true as const };
 }
 
 function daysBetween(now: Date, future: Date) {
   const ms = future.getTime() - now.getTime();
   return Math.ceil(ms / (1000 * 60 * 60 * 24));
+}
+
+function latestFromArray(arr: any[]) {
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  return arr[arr.length - 1];
 }
 
 export async function GET(req: NextRequest) {
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
 
   let appsQ = svc
     .from("investor_applications")
-    .select("id,email,investor_name,organization,status,reference_code,created_at,updated_at")
+    .select("id,email,investor_name,organization,status,reference_code,created_at,updated_at,metadata")
     .order("created_at", { ascending: false })
     .limit(500);
 
@@ -43,10 +44,9 @@ export async function GET(req: NextRequest) {
   const { data: apps, error: appsErr } = await appsQ;
   if (appsErr) return NextResponse.json({ ok: false, error: appsErr.message }, { status: 500 });
 
-  const emails = Array.from(new Set((apps ?? []).map(a => String(a.email).toLowerCase())));
-  const appIds = (apps ?? []).map(a => a.id);
+  const emails = Array.from(new Set((apps ?? []).map((a) => String(a.email).toLowerCase())));
+  const appIds = (apps ?? []).map((a) => a.id);
 
-  // Investors by email (canonical access + nda flags)
   const { data: investors, error: invErr } = await svc
     .from("investors")
     .select("email,status,approved_at,expires_at,access_expires_at,invited_at,invite_expires_at,nda_signed,nda_signed_at,nda_accepted_at,last_access")
@@ -54,27 +54,30 @@ export async function GET(req: NextRequest) {
 
   if (invErr) return NextResponse.json({ ok: false, error: invErr.message }, { status: 500 });
 
-  const investorsByEmail = new Map((investors ?? []).map(i => [String(i.email).toLowerCase(), i]));
+  const investorsByEmail = new Map((investors ?? []).map((i) => [String(i.email).toLowerCase(), i]));
 
-  // Audit logs: detect NDA email sent (internal or signwell)
   const { data: logs, error: logErr } = await svc
     .from("investor_application_audit_logs")
     .select("application_id,action,created_at,metadata")
     .in("application_id", appIds)
-    .in("action", ["nda_link_sent", "nda_signwell_sent", "approved", "rejected", "info_requested"])
+    .in("action", ["nda_link_sent", "nda_signwell_sent", "info_response_received"])
     .order("created_at", { ascending: false })
-    .limit(5000);
+    .limit(8000);
 
   if (logErr) return NextResponse.json({ ok: false, error: logErr.message }, { status: 500 });
 
   const latestNdaSentAtByApp = new Map<string, string>();
+  const latestInfoResponseAtByApp = new Map<string, string>();
+
   for (const l of logs ?? []) {
     if ((l.action === "nda_link_sent" || l.action === "nda_signwell_sent") && !latestNdaSentAtByApp.has(l.application_id)) {
       latestNdaSentAtByApp.set(l.application_id, l.created_at);
     }
+    if (l.action === "info_response_received" && !latestInfoResponseAtByApp.has(l.application_id)) {
+      latestInfoResponseAtByApp.set(l.application_id, l.created_at);
+    }
   }
 
-  // Internal signatures (if any)
   const { data: sigs, error: sigErr } = await svc
     .from("investor_nda_signatures")
     .select("application_id,signed_at")
@@ -89,7 +92,6 @@ export async function GET(req: NextRequest) {
     if (!signedAtByApp.has(s.application_id)) signedAtByApp.set(s.application_id, s.signed_at);
   }
 
-  // Latest pending extension request per email
   const { data: reqs, error: reqErr } = await svc
     .from("investor_access_extension_requests")
     .select("id,email,requested_until,reason,status,created_at,reviewed_at,admin_note")
@@ -107,7 +109,7 @@ export async function GET(req: NextRequest) {
 
   const now = new Date();
 
-  const rows = (apps ?? []).map(app => {
+  const rows = (apps ?? []).map((app) => {
     const email = String(app.email).toLowerCase();
     const inv = investorsByEmail.get(email);
 
@@ -121,6 +123,10 @@ export async function GET(req: NextRequest) {
     const ndaSigned = Boolean(inv?.nda_signed || signedAt);
 
     const pendingExt = latestPendingExtByEmail.get(email) || null;
+
+    const md: any = app.metadata || {};
+    const latestReq = latestFromArray(md.info_requests || []);
+    const latestResp = latestFromArray(md.info_responses || []);
 
     return {
       application_id: app.id,
@@ -144,76 +150,15 @@ export async function GET(req: NextRequest) {
       last_access: inv?.last_access ?? null,
 
       pending_extension_request: pendingExt,
+
+      latest_info_request_message: latestReq?.message ?? null,
+      latest_info_request_at: latestReq?.requested_at ?? null,
+
+      latest_info_response_at: latestInfoResponseAtByApp.get(app.id) || latestResp?.submitted_at || null,
+      latest_info_response_message: latestResp?.message ?? null,
+      latest_info_response_fields: latestResp?.fields ?? null,
     };
   });
 
   return NextResponse.json({ ok: true, rows });
-}
-
-export async function POST(req: NextRequest) {
-  const admin = await requireAdminSession();
-  if (!admin.ok) return NextResponse.json({ ok: false, error: admin.error }, { status: admin.status });
-
-  const svc = getServiceSupabase();
-  const body = await req.json().catch(() => null);
-
-  const action = String(body?.action || "");
-  const requestId = String(body?.request_id || "");
-  const adminNote = body?.admin_note ? String(body.admin_note) : null;
-
-  if (!["approve_extension", "reject_extension"].includes(action) || !requestId) {
-    return NextResponse.json({ ok: false, error: "Invalid payload" }, { status: 400 });
-  }
-
-  const { data: reqRow, error: reqErr } = await svc
-    .from("investor_access_extension_requests")
-    .select("*")
-    .eq("id", requestId)
-    .single();
-
-  if (reqErr || !reqRow) {
-    return NextResponse.json({ ok: false, error: reqErr?.message || "Not found" }, { status: 404 });
-  }
-
-  const email = String(reqRow.email).toLowerCase();
-  const reviewedAt = new Date().toISOString();
-
-  if (action === "reject_extension") {
-    const { error } = await svc
-      .from("investor_access_extension_requests")
-      .update({ status: "rejected", reviewed_at: reviewedAt, reviewed_by: admin.userId, admin_note: adminNote })
-      .eq("id", requestId);
-
-    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    return NextResponse.json({ ok: true });
-  }
-
-  // approve_extension: extend access in investors table
-  const requestedUntil = reqRow.requested_until;
-
-  const { error: invErr } = await svc
-    .from("investors")
-    .update({ access_expires_at: requestedUntil })
-    .eq("email", email);
-
-  if (invErr) return NextResponse.json({ ok: false, error: invErr.message }, { status: 500 });
-
-  const { error: updErr } = await svc
-    .from("investor_access_extension_requests")
-    .update({ status: "approved", reviewed_at: reviewedAt, reviewed_by: admin.userId, admin_note: adminNote })
-    .eq("id", requestId);
-
-  if (updErr) return NextResponse.json({ ok: false, error: updErr.message }, { status: 500 });
-
-  // Optional: audit
-  try {
-    await svc.from("investor_application_audit_logs").insert({
-      application_id: reqRow.application_id ?? null,
-      action: "access_extension_approved",
-      performed_by: admin.userId,
-      metadata: { email, requested_until: requestedUntil },
-    });
-  } catch {}
-
-  return NextResponse.json({ ok: true });
 }
