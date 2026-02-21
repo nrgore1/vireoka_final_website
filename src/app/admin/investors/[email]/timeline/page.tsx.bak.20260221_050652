@@ -9,7 +9,7 @@ params,
 }) {
   
   const { email } = await params;
-const emailDecoded = decodeURIComponent(email);
+const email = decodeURIComponent(email);
   const supabase = supabaseAdmin();
 
   const { data: comms } = await supabase
@@ -23,7 +23,7 @@ const emailDecoded = decodeURIComponent(email);
       created_at,
       email_tracking_events(event)
     `)
-    .eq("email", emailDecoded)
+    .eq("email", email)
     .order("created_at", { ascending: false });
 
   return (

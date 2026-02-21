@@ -1,4 +1,4 @@
-import { Client as HubspotClient } from "@hubspot/api-client";
+import HubspotClient from "@hubspot/api-client";
 
 type LeadPayload = Record<string, any>;
 

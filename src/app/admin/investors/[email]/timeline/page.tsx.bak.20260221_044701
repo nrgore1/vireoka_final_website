@@ -3,13 +3,11 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export const runtime = "nodejs";
 
 export default async function InvestorTimelinePage({
-params,
+  params,
 }: {
-  params: Promise<{ email: string }>;
+  params: { email: string };
 }) {
-  
-  const { email } = await params;
-const emailDecoded = decodeURIComponent(email);
+  const email = decodeURIComponent(params.email);
   const supabase = supabaseAdmin();
 
   const { data: comms } = await supabase
@@ -23,7 +21,7 @@ const emailDecoded = decodeURIComponent(email);
       created_at,
       email_tracking_events(event)
     `)
-    .eq("email", emailDecoded)
+    .eq("email", email)
     .order("created_at", { ascending: false });
 
   return (

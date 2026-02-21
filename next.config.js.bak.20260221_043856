@@ -1,0 +1,24 @@
+/**
+ * Wrapper config:
+ * - Keeps your existing config in next.config.base.js untouched.
+ * - Disables outputFileTracing on non-Vercel hosts (e.g., Hostinger) to prevent
+ *   missing .nft.json build failures.
+ */
+const base = require("./next.config.base.js");
+
+function withHostSafeTracing(cfg) {
+  const isVercel = Boolean(process.env.VERCEL);
+
+  // If you're running on a classic Node host (Hostinger),
+  // you typically ship the full node_modules, so output tracing isn't required.
+  if (!isVercel) {
+    return { ...cfg, outputFileTracing: false };
+  }
+
+  return cfg;
+}
+
+module.exports =
+  typeof base === "function"
+    ? async (...args) => withHostSafeTracing(await base(...args))
+    : withHostSafeTracing(base);
