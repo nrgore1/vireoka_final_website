@@ -1,15 +1,34 @@
-import { requireInvestor } from "@/lib/auth/requireInvestor";
+import { investorGate } from "@/lib/investorGate";
 
-export default async function InvestorPortal() {
-  const user = await requireInvestor();
+export const metadata = { title: "Investor Portal" };
+
+export default async function InvestorPortalPage() {
+  // Enforces:
+  // - must have session
+  // - must have NDA accepted (based on your gate)
+  await investorGate();
 
   return (
-    <main className="p-10">
-      <h1 className="text-2xl font-semibold">Investor Portal</h1>
-      <p className="mt-2 opacity-80">Signed in as: {user.email}</p>
+    <main className="mx-auto max-w-5xl px-6 py-12">
+      <h1 className="text-3xl font-semibold">Investor Portal</h1>
+      <p className="mt-3 text-sm text-gray-600">
+        Welcome. Your access is active. This page will contain the deck, updates, and diligence resources.
+      </p>
 
-      <div className="mt-6">
-        <p>Welcome to the Vireoka investor portal.</p>
+      <div className="mt-8 grid gap-4">
+        <div className="rounded-xl border p-6">
+          <div className="text-sm font-semibold">Pitch Deck</div>
+          <p className="mt-2 text-sm text-gray-600">
+            Add your deck link / API route here (you already have /api/investors/deck in the repo).
+          </p>
+        </div>
+
+        <div className="rounded-xl border p-6">
+          <div className="text-sm font-semibold">Company Materials</div>
+          <p className="mt-2 text-sm text-gray-600">
+            Financials, traction, FAQ, and updates go here.
+          </p>
+        </div>
       </div>
     </main>
   );

@@ -1,0 +1,94 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { sha256 } from "@/lib/security/tokens";
+
+const sb = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
+
+function computeNextStep(appStatus?: string | null, investor?: any | null) {
+  const a = (appStatus || "").toLowerCase();
+  const isApprovedInvestor =
+    Boolean(investor?.approved_at) || (String(investor?.status || "").toLowerCase() === "approved");
+
+  if (a === "rejected") return "Your application was not approved. If you believe this is an error, please contact us.";
+  if (isApprovedInvestor) {
+    if (!investor?.nda_accepted_at) return "Approved. Next step: sign the NDA to unlock portal access.";
+    return "Access granted. You can use the investor portal.";
+  }
+  if (a === "approved") return "Approved. Check your email for the NDA link and portal instructions.";
+  if (a === "submitted") return "Submitted. We are reviewing your request.";
+  return "We are processing your request.";
+}
+
+export async function GET(req: NextRequest) {
+  const raw = String(req.nextUrl.searchParams.get("token") || "").trim();
+  if (!raw) return NextResponse.json({ ok: false, error: "Missing token" }, { status: 400 });
+
+  const tokenHash = sha256(raw);
+
+  // Find link
+  const { data: links, error: linkErr } = await sb
+    .from("investor_status_links")
+    .select("id,email,application_id,expires_at,used_at")
+    .eq("token_hash", tokenHash)
+    .limit(1);
+
+  if (linkErr) return NextResponse.json({ ok: false, error: linkErr.message }, { status: 500 });
+  const link = links?.[0];
+  if (!link) return NextResponse.json({ ok: false, error: "Invalid token" }, { status: 404 });
+
+  if (link.used_at) return NextResponse.json({ ok: false, error: "Link already used" }, { status: 410 });
+  if (new Date(link.expires_at).getTime() < Date.now()) {
+    return NextResponse.json({ ok: false, error: "Link expired" }, { status: 410 });
+  }
+
+  // Mark used first (one-time)
+  const { error: useErr } = await sb
+    .from("investor_status_links")
+    .update({ used_at: new Date().toISOString() })
+    .eq("id", link.id);
+
+  if (useErr) return NextResponse.json({ ok: false, error: useErr.message }, { status: 500 });
+
+  // Load application (latest by email if needed)
+  const appRes = await sb
+    .from("investor_applications")
+    .select("email,investor_name,organization,status,reference_code,created_at,updated_at")
+    .eq("email", link.email)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  const app = appRes.data?.[0] ?? null;
+
+  // Load investor (portal readiness)
+  const invRes = await sb.from("investors").select("*").eq("email", link.email).limit(1);
+  const investor = invRes.data?.[0] ?? null;
+
+  return NextResponse.json({
+    ok: true,
+    application: app
+      ? {
+          email: app.email,
+          investor_name: app.investor_name,
+          organization: app.organization,
+          status: app.status,
+          reference_code: app.reference_code,
+          created_at: app.created_at,
+          updated_at: app.updated_at,
+        }
+      : null,
+    investor: investor
+      ? {
+          email: investor.email,
+          status: investor.status ?? null,
+          approved_at: investor.approved_at ?? null,
+          nda_accepted_at: investor.nda_accepted_at ?? null,
+          expires_at: investor.expires_at ?? null,
+        }
+      : null,
+    next_step: computeNextStep(app?.status ?? null, investor),
+  });
+}

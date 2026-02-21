@@ -1,0 +1,75 @@
+import { NextResponse } from 'next/server';
+import { getServiceSupabase } from '@/lib/supabase/serverClients';
+import { sha256 } from '@/lib/security/tokens';
+
+async function readBody(req: Request) {
+  const contentType = req.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    return await req.json().catch(() => null);
+  }
+
+  if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+    const form = await req.formData();
+    return {
+      token: String(form.get('token') || ''),
+      signer_name: String(form.get('signer_name') || ''),
+      signer_email: String(form.get('signer_email') || ''),
+    };
+  }
+
+  return null;
+}
+
+export async function POST(req: Request) {
+  const body = await readBody(req);
+  const token = body?.token as string | undefined;
+  const signer_name = body?.signer_name as string | undefined;
+  const signer_email = body?.signer_email as string | undefined;
+
+  if (!token || !signer_name || !signer_email) {
+    return NextResponse.json({ ok: false, error: 'Missing required fields' }, { status: 400 });
+  }
+
+  const supabase = getServiceSupabase();
+  const tokenHash = sha256(token);
+
+  const { data: link, error: linkErr } = await supabase
+    .from('investor_nda_links')
+    .select('id,application_id,expires_at,used_at')
+    .eq('token_hash', tokenHash)
+    .maybeSingle();
+
+  if (linkErr) return NextResponse.json({ ok: false, error: linkErr.message }, { status: 500 });
+  if (!link) return NextResponse.json({ ok: false, error: 'Invalid link' }, { status: 404 });
+
+  const expired = new Date(link.expires_at).getTime() < Date.now();
+  if (expired) return NextResponse.json({ ok: false, error: 'Link expired' }, { status: 410 });
+  if (link.used_at) return NextResponse.json({ ok: false, error: 'Link already used' }, { status: 409 });
+
+  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '';
+  const userAgent = req.headers.get('user-agent') || '';
+
+  const { error: sigErr } = await supabase.from('investor_nda_signatures').upsert({
+    application_id: link.application_id,
+    signer_email,
+    signer_name,
+    ip,
+    user_agent: userAgent,
+    nda_version: 'v1',
+    metadata: {},
+  }, { onConflict: 'application_id' });
+
+  if (sigErr) return NextResponse.json({ ok: false, error: sigErr.message }, { status: 500 });
+
+  await supabase.from('investor_nda_links').update({ used_at: new Date().toISOString() }).eq('id', link.id);
+
+  await supabase.from('investor_application_audit_logs').insert({
+    application_id: link.application_id,
+    action: 'nda_signed',
+    metadata: { signer_email },
+  });
+
+  // Redirect to a nice confirmation page (optional)
+  return NextResponse.redirect(new URL('/investors/nda-signed', req.url), { status: 303 });
+}

@@ -1,0 +1,224 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+type PendingExt = {
+  id: string;
+  email: string;
+  requested_until: string;
+  reason: string | null;
+  status: "pending";
+  created_at: string;
+};
+
+type Row = {
+  application_id: string;
+  reference_code: string | null;
+  email: string;
+  investor_name: string | null;
+  organization: string | null;
+  application_status: string;
+  application_created_at: string;
+
+  nda_email_sent_at: string | null;
+
+  access_approved: boolean;
+  access_expires_at: string | null;
+  days_outstanding: number | null;
+
+  nda_signed: boolean;
+  nda_signed_at: string | null;
+
+  invited_at: string | null;
+  last_access: string | null;
+
+  pending_extension_request: PendingExt | null;
+};
+
+function fmtDate(v: string | null) {
+  if (!v) return "—";
+  try { return new Date(v).toLocaleString(); } catch { return v; }
+}
+
+export default function DashboardClient() {
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("all");
+  const [q, setQ] = useState("");
+
+  const url = useMemo(() => {
+    const sp = new URLSearchParams();
+    sp.set("status", status);
+    if (q.trim()) sp.set("q", q.trim());
+    return `/api/admin/investor-dashboard?${sp.toString()}`;
+  }, [status, q]);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await fetch(url, { cache: "no-store" });
+      const j = await r.json();
+      setRows(j.rows || []);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, [url]);
+
+  async function approveExtension(requestId: string) {
+    await fetch("/api/admin/investor-dashboard", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "approve_extension", request_id: requestId }),
+    });
+    await load();
+  }
+
+  async function rejectExtension(requestId: string) {
+    await fetch("/api/admin/investor-dashboard", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "reject_extension", request_id: requestId }),
+    });
+    await load();
+  }
+
+  const cell: React.CSSProperties = { padding: 10, verticalAlign: "top" };
+  const header: React.CSSProperties = { padding: 10, fontWeight: 700 };
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ padding: 8 }}>
+          <option value="all">All</option>
+          <option value="submitted">Submitted</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+          <option value="info_requested">Info requested</option>
+        </select>
+
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search name/email/org"
+          style={{ padding: 8, minWidth: 280 }}
+        />
+
+        <button onClick={load} style={{ padding: "8px 12px" }}>
+          Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div>Loading…</div>
+      ) : (
+        <div style={{ overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#f9fafb", textAlign: "left" }}>
+                <th style={header}>Applicant</th>
+                <th style={header}>App Status</th>
+                <th style={header}>NDA Email Sent</th>
+                <th style={header}>NDA Signed</th>
+                <th style={header}>Access Approved</th>
+                <th style={header}>Access Expires</th>
+                <th style={header}>Days Outstanding</th>
+                <th style={header}>Extension Request</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.application_id} style={{ borderTop: "1px solid #e5e7eb" }}>
+                  <td style={cell}>
+                    <div style={{ fontWeight: 700 }}>
+                      {r.investor_name || "—"} — {r.email}
+                    </div>
+                    <div style={{ color: "#6b7280" }}>{r.organization || "—"}</div>
+                    <div style={{ color: "#6b7280", fontSize: 12 }}>
+                      Ref: {r.reference_code || "—"} • Created: {fmtDate(r.application_created_at)}
+                    </div>
+                  </td>
+
+                  <td style={cell}>{r.application_status}</td>
+                  <td style={cell}>{fmtDate(r.nda_email_sent_at)}</td>
+
+                  <td style={cell}>
+                    <div>{r.nda_signed ? "✅ Yes" : "— No"}</div>
+                    <div style={{ color: "#6b7280", fontSize: 12 }}>{fmtDate(r.nda_signed_at)}</div>
+                  </td>
+
+                  <td style={cell}>{r.access_approved ? "✅ Yes" : "— No"}</td>
+                  <td style={cell}>{fmtDate(r.access_expires_at)}</td>
+
+                  <td style={cell}>
+                    {r.days_outstanding == null ? "—" : r.days_outstanding}
+                    {typeof r.days_outstanding === "number" && r.days_outstanding < 0 ? " (expired)" : ""}
+                  </td>
+
+                  <td style={cell}>
+                    {!r.pending_extension_request ? (
+                      <span style={{ color: "#6b7280" }}>—</span>
+                    ) : (
+                      <div>
+                        <div style={{ fontWeight: 700 }}>Pending</div>
+                        <div style={{ fontSize: 12, color: "#6b7280" }}>
+                          Until: {fmtDate(r.pending_extension_request.requested_until)}
+                        </div>
+                        {r.pending_extension_request.reason ? (
+                          <div style={{ fontSize: 12, color: "#6b7280" }}>
+                            {r.pending_extension_request.reason}
+                          </div>
+                        ) : null}
+
+                        <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                          <button
+                            onClick={() => approveExtension(r.pending_extension_request!.id)}
+                            style={{
+                              padding: "6px 10px",
+                              background: "#111827",
+                              color: "white",
+                              borderRadius: 8,
+                              border: "1px solid #111827",
+                              cursor: "pointer",
+                              fontWeight: 700,
+                            }}
+                          >
+                            Approve
+                          </button>
+
+                          <button
+                            onClick={() => rejectExtension(r.pending_extension_request!.id)}
+                            style={{
+                              padding: "6px 10px",
+                              border: "1px solid #d1d5db",
+                              borderRadius: 8,
+                              cursor: "pointer",
+                              fontWeight: 700,
+                              background: "white",
+                            }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={8} style={{ padding: 14, color: "#6b7280" }}>
+                    No results.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

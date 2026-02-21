@@ -2,116 +2,92 @@
 
 import { useState } from "react";
 
-type Form = {
-  full_name: string;
-  email: string;
-  role: string;
-  firm: string;
-  notes: string;
-};
+export default function InvestorRequestForm() {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [ok, setOk] = useState(false);
+  const [referenceCode, setReferenceCode] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
-export default function InvestorRequestForm({ onDone }: { onDone?: () => void }) {
-  const [form, setForm] = useState<Form>({
-    full_name: "",
-    email: "",
-    role: "",
-    firm: "",
-    notes: "",
-  });
-  const [msg, setMsg] = useState<string>("");
-  const [busy, setBusy] = useState(false);
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    setOk(false);
+    setReferenceCode(null);
+    setLoading(true);
 
-  async function submit() {
-    setBusy(true);
-    setMsg("");
-    const res = await fetch("/api/investors/apply", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        full_name: form.full_name,
-        email: form.email,
-        role: form.role,
-        firm: form.firm,
-        notes: form.notes || undefined,
-      }),
-    }).catch(() => null);
+    try {
+      const res = await fetch("/api/investors/request-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, email, company, message }),
+      });
 
-    setBusy(false);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || (await res.text()));
 
-    if (!res || !res.ok) {
-      setMsg("Unable to submit request. Please check fields and try again.");
-      return;
+      setOk(true);
+      setReferenceCode(data.referenceCode || data.reference_code || null);
+    } catch (e: any) {
+      setErr(String(e?.message || e));
+    } finally {
+      setLoading(false);
     }
-    setMsg("Request submitted. We will review and follow up by email.");
-    onDone?.();
+  }
+
+  if (ok) {
+    return (
+      <div className="rounded-lg border border-vireoka-line bg-white p-6">
+        <h3 className="text-lg font-semibold">Thank you for your interest in Vireoka</h3>
+        <p className="mt-2 text-sm text-neutral-700">
+          Your investor access request has been successfully submitted. Our team will review it shortly.
+        </p>
+        {referenceCode ? (
+          <p className="mt-3 text-sm">
+            <span className="font-medium">Reference code:</span> {referenceCode}
+          </p>
+        ) : null}
+        <p className="mt-4 text-sm text-neutral-700">
+          Questions? Contact us at <a className="underline" href="mailto:info@vireoka.com">info@vireoka.com</a>.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="mt-6 rounded-xl border p-6">
-      <h2 className="text-lg font-semibold text-vireoka-indigo">Request Investor Access</h2>
-      <p className="mt-2 text-sm text-vireoka-graphite">
-        Provide details for review. Approved investors will be prompted to accept the NDA immediately after first login.
-      </p>
+    <form onSubmit={onSubmit} className="grid gap-4">
+      {err ? <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{err}</div> : null}
 
-      <div className="mt-5 grid gap-4">
-        <div>
-          <label className="text-sm font-medium">Full name</label>
-          <input
-            className="mt-1 w-full rounded-md border px-3 py-2"
-            value={form.full_name}
-            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Email address</label>
-          <input
-            className="mt-1 w-full rounded-md border px-3 py-2"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Role</label>
-          <input
-            className="mt-1 w-full rounded-md border px-3 py-2"
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Firm / Organization</label>
-          <input
-            className="mt-1 w-full rounded-md border px-3 py-2"
-            value={form.firm}
-            onChange={(e) => setForm({ ...form, firm: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Comments (optional)</label>
-          <textarea
-            className="mt-1 w-full rounded-md border px-3 py-2"
-            rows={4}
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          />
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={submit}
-            disabled={busy}
-            className="rounded-md bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
-          >
-            {busy ? "Submitting..." : "Submit request"}
-          </button>
-          {msg ? <p className="text-sm text-vireoka-graphite">{msg}</p> : null}
-        </div>
+      <div className="grid gap-1">
+        <label className="text-sm font-medium">Full name</label>
+        <input className="rounded-md border px-3 py-2" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
       </div>
-    </div>
+
+      <div className="grid gap-1">
+        <label className="text-sm font-medium">Email</label>
+        <input className="rounded-md border px-3 py-2" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+      </div>
+
+      <div className="grid gap-1">
+        <label className="text-sm font-medium">Company</label>
+        <input className="rounded-md border px-3 py-2" value={company} onChange={(e) => setCompany(e.target.value)} />
+      </div>
+
+      <div className="grid gap-1">
+        <label className="text-sm font-medium">Message</label>
+        <textarea className="rounded-md border px-3 py-2" rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="rounded-md bg-vireoka-indigo px-4 py-2 text-white disabled:opacity-60"
+      >
+        {loading ? "Submitting..." : "Request access"}
+      </button>
+    </form>
   );
 }

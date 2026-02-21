@@ -1,0 +1,101 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
+export default function StatusViewClient() {
+  const sp = useSearchParams();
+  const token = sp.get("token") || "";
+
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+  const [data, setData] = useState<any | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function run() {
+      setLoading(true);
+      setErr(null);
+      setData(null);
+
+      if (!token) {
+        setErr("Missing token.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const r = await fetch(`/api/investors/status/resolve?token=${encodeURIComponent(token)}`, {
+          cache: "no-store",
+        });
+        const j = await r.json().catch(() => null);
+
+        if (!r.ok || !j?.ok) {
+          setErr(j?.error ?? "Unable to load status.");
+        } else {
+          setData(j);
+        }
+      } catch (e: any) {
+        setErr(e?.message ?? "Network error.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  return (
+    <main className="mx-auto max-w-2xl px-6 py-14">
+      <h1 className="text-3xl font-semibold">Application status</h1>
+
+      <div className="mt-6 rounded-xl border p-5">
+        {loading ? <div className="text-sm text-gray-600">Loading…</div> : null}
+
+        {err ? (
+          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
+            {err}
+          </div>
+        ) : null}
+
+        {data ? (
+          <div className="text-sm">
+            <div className="font-medium">Status: {data.application?.status ?? "unknown"}</div>
+
+            {data.application ? (
+              <div className="mt-2 text-gray-700">
+                <div>Email: {data.application.email}</div>
+                <div>Reference code: {data.application.reference_code}</div>
+                <div>Organization: {data.application.organization ?? "-"}</div>
+              </div>
+            ) : (
+              <div className="mt-2 text-gray-700">No application found.</div>
+            )}
+
+            {data.investor ? (
+              <div className="mt-3 text-gray-700">
+                <div className="font-medium">Portal readiness</div>
+                <div>Approved: {data.investor.approved_at ? "Yes" : "No"}</div>
+                <div>NDA signed: {data.investor.nda_accepted_at ? "Yes" : "No"}</div>
+                <div>Expires: {data.investor.expires_at ? new Date(data.investor.expires_at).toLocaleString() : "-"}</div>
+              </div>
+            ) : null}
+
+            <div className="mt-3 rounded-md bg-gray-50 px-3 py-2">
+              <div className="font-medium">Next step</div>
+              <div className="text-gray-700">{data.next_step}</div>
+            </div>
+
+            <div className="mt-4 text-xs text-gray-500">
+              This secure link is single-use. If you need it again, request a new link from the status page.
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </main>
+  );
+}
