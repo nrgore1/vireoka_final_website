@@ -101,6 +101,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const id = body?.id as string | undefined;
   const action = body?.action as string | undefined;
+  const message = body?.message != null ? String(body.message) : "";
 
   if (!id || !["approve", "reject", "request_info", "resend_nda"].includes(String(action))) {
     return NextResponse.json({ ok: false, error: "Invalid payload" }, { status: 400 });
@@ -138,8 +139,15 @@ export async function POST(req: NextRequest) {
     await audit("info_requested");
 
     const origin = process.env.APP_ORIGIN || originFromReq(req);
-    await sendRequestInfoEmail({ email, statusUrl: `${origin}/investors/status` });
-    await audit("info_request_email_sent");
+
+    // Send a human message from the admin (if provided) to make the request actionable.
+    await sendRequestInfoEmail({
+      email,
+      statusUrl: `${origin}/investors/status`,
+      message,
+    });
+
+    await audit("info_request_email_sent", { message: message ? String(message).slice(0, 4000) : "" });
 
     return NextResponse.json({ ok: true });
   }

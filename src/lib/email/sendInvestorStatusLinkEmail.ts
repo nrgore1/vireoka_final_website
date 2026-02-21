@@ -1,54 +1,83 @@
+import { sendEmail } from "@/lib/email/resend";
+
+function esc(v: any) {
+  return String(v ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function formatReviewLine(appStatus?: string | null, createdAt?: string | null) {
+  const s = String(appStatus || "").toLowerCase();
+  if (s !== "submitted") return "";
+
+  // 24-hour review promise if admin hasn't acted yet
+  let within = true;
+  if (createdAt) {
+    const t = new Date(createdAt).getTime();
+    if (Number.isFinite(t)) {
+      within = (Date.now() - t) < 24 * 60 * 60 * 1000;
+    }
+  }
+
+  return within
+    ? "Your request is currently under review. You’ll receive an update within 24 hours."
+    : "Your request is currently under review. You’ll receive an update as soon as possible.";
+}
+
 export async function sendInvestorStatusLinkEmail(args: {
   email: string;
   statusUrl: string;
   expiresHours: number;
+
+  // Optional personalization (recommended)
+  name?: string | null;
+  applicationStatus?: string | null;
+  applicationCreatedAt?: string | null;
 }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM || "Vireoka <no-reply@vireoka.com>";
+  const to = String(args.email || "").trim().toLowerCase();
+  const statusUrl = String(args.statusUrl || "").trim();
+  const expiresHours = Number(args.expiresHours || 2);
 
-  if (!apiKey) throw new Error("RESEND_API_KEY is not set");
-  if (!args.email) throw new Error("Missing recipient email");
+  if (!to || !statusUrl) throw new Error("Missing email or statusUrl");
 
-  const subject = "Your Vireoka investor application status link";
+  const name = String(args.name || "").trim();
+  const greeting = name ? `Hi ${esc(name)},` : "Hi there,";
 
+  const reviewLine = formatReviewLine(args.applicationStatus, args.applicationCreatedAt);
+
+  const subject = "Vireoka — Your investor application status";
   const html = `
-  <div style="font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;">
-    <h2 style="margin:0 0 12px 0;">Check your application status</h2>
+  <div style="font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; line-height: 1.5;">
+    <p style="margin:0 0 12px 0;">${greeting}</p>
+
     <p style="margin:0 0 12px 0;">
-      Use the secure link below to view your current investor application status.
-      This link expires in <b>${args.expiresHours}</b> hours and can be used once.
+      You requested an update on your Vireoka investor application. Use the secure link below to view your current status.
     </p>
-    <p style="margin:16px 0;">
-      <a href="${args.statusUrl}" style="display:inline-block;padding:10px 14px;border-radius:8px;background:#111;color:#fff;text-decoration:none;">
-        View status
+
+    ${reviewLine ? `<p style="margin:0 0 12px 0;"><strong>${esc(reviewLine)}</strong></p>` : ""}
+
+    <p style="margin:0 0 16px 0;">
+      <a href="${esc(statusUrl)}"
+         style="display:inline-block;padding:10px 14px;border-radius:10px;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;">
+        View application status
       </a>
     </p>
-    <p style="margin:16px 0 0 0;color:#666;font-size:12px;">
-      If you did not request this, you can ignore this email.
+
+    <p style="margin:0 0 10px 0;color:#6b7280;font-size:12px;">
+      For security, this link expires in approximately <strong>${expiresHours} hours</strong>.
     </p>
-  </div>`;
 
-  const text = `Check your application status (expires in ${args.expiresHours} hours): ${args.statusUrl}`;
+    <p style="margin:0;color:#6b7280;font-size:12px;">
+      If the button doesn’t work, copy and paste this URL into your browser:<br/>
+      ${esc(statusUrl)}
+    </p>
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [args.email],
-      subject,
-      html,
-      text,
-    }),
-  });
+    <p style="margin:16px 0 0 0;color:#6b7280;font-size:12px;">
+      — Vireoka Team
+    </p>
+  </div>
+  `.trim();
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Resend failed (${res.status}): ${body}`);
-  }
-
-  return { ok: true };
+  return sendEmail({ to, subject, html });
 }

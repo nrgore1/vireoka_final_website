@@ -69,6 +69,11 @@ export default function DashboardClient() {
   const [q, setQ] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  const [requestInfoOpen, setRequestInfoOpen] = useState(false);
+  const [requestInfoId, setRequestInfoId] = useState<string | null>(null);
+  const [requestInfoEmail, setRequestInfoEmail] = useState<string | null>(null);
+  const [requestInfoMessage, setRequestInfoMessage] = useState("");
+
   const url = useMemo(() => {
     const sp = new URLSearchParams();
     sp.set("status", status);
@@ -79,9 +84,10 @@ export default function DashboardClient() {
   async function load() {
     setLoading(true);
     try {
-      const r = await fetch(url, { cache: "no-store" });
-      const j = await r.json();
-      setRows(j.rows || []);
+      const r = await fetch(url);
+      const j = await r.json().catch(() => null);
+      if (r.ok && j?.ok) setRows(j.rows || []);
+      else setRows([]);
     } finally {
       setLoading(false);
     }
@@ -89,61 +95,8 @@ export default function DashboardClient() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
-
-  async function approveExtension(requestId: string) {
-    await fetch("/api/admin/investor-dashboard", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "approve_extension", request_id: requestId }),
-    });
-    await load();
-  }
-
-  async function rejectExtension(requestId: string) {
-    await fetch("/api/admin/investor-dashboard", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "reject_extension", request_id: requestId }),
-    });
-    await load();
-  }
-
-  // ---- Admin actions (existing endpoint) ----
-  async function adminAction(applicationId: string, action: "approve" | "resend_nda" | "request_info" | "reject") {
-    setBusyId(applicationId);
-    try {
-      const r = await fetch("/api/admin/investor-applications/session", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id: applicationId, action }),
-      });
-      const j = await r.json().catch(() => null);
-
-      if (!r.ok || j?.ok === false) {
-        const msg = j?.error || `Action failed: ${action}`;
-        alert(msg);
-      } else {
-        // Optional: show note from backend (e.g., "NDA already sent; skipped resend.")
-        if (j?.note) alert(String(j.note));
-      }
-    } finally {
-      setBusyId(null);
-      await load();
-    }
-  }
-
-  const cell: React.CSSProperties = { padding: 10, verticalAlign: "top" };
-  const header: React.CSSProperties = { padding: 10, fontWeight: 700 };
-
-  function statusChip(s: string) {
-    const v = String(s || "").toLowerCase();
-    if (v === "submitted") return pill("submitted", "#FEF3C7", "#92400E");
-    if (v === "approved") return pill("approved", "#D1FAE5", "#065F46");
-    if (v === "rejected") return pill("rejected", "#FEE2E2", "#991B1B");
-    if (v === "info_requested") return pill("info requested", "#DBEAFE", "#1E40AF");
-    return pill(v || "unknown", "#E5E7EB", "#111827");
-  }
 
   function canShowApprove(r: Row) {
     const s = String(r.application_status || "").toLowerCase();
@@ -169,153 +122,243 @@ export default function DashboardClient() {
       fontWeight: 700,
       cursor: disabled ? "not-allowed" : "pointer",
       opacity: disabled ? 0.6 : 1,
-      border: "1px solid transparent",
+      border: "1px solid #e5e7eb",
       background: "white",
-      color: "#111827",
-      fontSize: 13,
-      lineHeight: "16px",
-      whiteSpace: "nowrap",
     };
 
     if (kind === "primary") {
       base.background = "#111827";
-      base.border = "1px solid #111827";
       base.color = "white";
-    }
-    if (kind === "secondary") {
-      base.border = "1px solid #D1D5DB";
-      base.background = "white";
-      base.color = "#111827";
+      base.border = "1px solid #111827";
     }
     if (kind === "danger") {
-      base.border = "1px solid #FCA5A5";
-      base.background = "#FEF2F2";
-      base.color = "#991B1B";
+      base.background = "#fff1f2";
+      base.color = "#b91c1c";
+      base.border = "1px solid #fecdd3";
     }
+
     return base;
   }
 
+  async function adminAction(
+    applicationId: string,
+    action: "approve" | "resend_nda" | "request_info" | "reject",
+    extra?: Record<string, any>
+  ) {
+    setBusyId(applicationId);
+    try {
+      const r = await fetch("/api/admin/investor-applications/session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: applicationId, action, ...(extra || {}) }),
+      });
+      const j = await r.json().catch(() => null);
+
+      if (!r.ok || j?.ok === false) {
+        const msg = j?.error || `Action failed: ${action}`;
+        alert(msg);
+      } else {
+        if (j?.note) alert(String(j.note));
+      }
+    } finally {
+      setBusyId(null);
+      await load();
+    }
+  }
+
+  const cell: React.CSSProperties = { padding: 10, verticalAlign: "top" };
+  const header: React.CSSProperties = { padding: 10, fontSize: 12, letterSpacing: 0.2, color: "#374151" };
+
   return (
     <div>
+      {requestInfoOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.35)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+            zIndex: 50,
+          }}
+          onClick={() => {
+            setRequestInfoOpen(false);
+            setRequestInfoId(null);
+            setRequestInfoEmail(null);
+            setRequestInfoMessage("");
+          }}
+        >
+          <div
+            style={{
+              width: "min(720px, 100%)",
+              background: "white",
+              borderRadius: 16,
+              padding: 16,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <div>
+                <div style={{ fontWeight: 900, fontSize: 16 }}>Request additional information</div>
+                <div style={{ color: "#6b7280", fontSize: 12 }}>
+                  This message will be emailed to {requestInfoEmail || "the applicant"}.
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setRequestInfoOpen(false);
+                  setRequestInfoId(null);
+                  setRequestInfoEmail(null);
+                  setRequestInfoMessage("");
+                }}
+                style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "6px 10px", fontWeight: 800 }}
+              >
+                Close
+              </button>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <textarea
+                value={requestInfoMessage}
+                onChange={(e) => setRequestInfoMessage(e.target.value)}
+                placeholder={
+                  "What do you need from the investor?\n\nExample:\n• Please share your accreditation status.\n• What is your intended use case for our materials?\n• What is your role/title and organization website?"
+                }
+                rows={8}
+                style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 12, padding: 10, fontSize: 13 }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 12 }}>
+              <button
+                onClick={() => {
+                  setRequestInfoOpen(false);
+                  setRequestInfoId(null);
+                  setRequestInfoEmail(null);
+                  setRequestInfoMessage("");
+                }}
+                style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: "8px 12px", fontWeight: 900 }}
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!requestInfoId || busyId === requestInfoId}
+                onClick={async () => {
+                  if (!requestInfoId) return;
+                  await adminAction(requestInfoId, "request_info", { message: requestInfoMessage });
+                  setRequestInfoOpen(false);
+                  setRequestInfoId(null);
+                  setRequestInfoEmail(null);
+                  setRequestInfoMessage("");
+                }}
+                style={{
+                  background: "#111827",
+                  color: "white",
+                  borderRadius: 12,
+                  padding: "8px 12px",
+                  fontWeight: 900,
+                  opacity: !requestInfoId || busyId === requestInfoId ? 0.6 : 1,
+                  cursor: !requestInfoId || busyId === requestInfoId ? "not-allowed" : "pointer",
+                }}
+              >
+                Send request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ padding: 8 }}>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ padding: 8, borderRadius: 10 }}>
           <option value="all">All</option>
           <option value="submitted">Submitted</option>
+          <option value="info_requested">Info Requested</option>
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
-          <option value="info_requested">Info requested</option>
         </select>
 
         <input
+          placeholder="Search name/email/org"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search name/email/org"
-          style={{ padding: 8, minWidth: 280 }}
+          style={{ padding: 8, borderRadius: 10, minWidth: 260 }}
         />
 
-        <button onClick={load} style={{ padding: "8px 12px" }}>
+        <button onClick={() => load()} style={btnStyle("secondary", loading)}>
           Refresh
         </button>
       </div>
 
-      {loading ? (
-        <div>Loading…</div>
-      ) : (
-        <div style={{ overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: 10 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#f9fafb", textAlign: "left" }}>
-                <th style={header}>Applicant</th>
-                <th style={header}>App Status</th>
-                <th style={header}>NDA Email Sent</th>
-                <th style={header}>NDA Signed</th>
-                <th style={header}>Access Approved</th>
-                <th style={header}>Access Expires</th>
-                <th style={header}>Days Outstanding</th>
-                <th style={header}>Extension Request</th>
-                <th style={header}>Actions</th>
-              </tr>
-            </thead>
+      <div style={{ border: "1px solid #e5e7eb", borderRadius: 14, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead style={{ background: "#fafafa" }}>
+            <tr>
+              <th style={header}>Applicant</th>
+              <th style={header}>App Status</th>
+              <th style={header}>NDA Email Sent</th>
+              <th style={header}>NDA Signed</th>
+              <th style={header}>Access Approved</th>
+              <th style={header}>Access Expires</th>
+              <th style={header}>Days Outstanding</th>
+              <th style={header}>Extension Request</th>
+              <th style={header}>Actions</th>
+            </tr>
+          </thead>
 
-            <tbody>
-              {rows.map((r) => {
+          <tbody>
+            {loading && (
+              <tr>
+                <td colSpan={9} style={{ padding: 14, color: "#6b7280" }}>
+                  Loading…
+                </td>
+              </tr>
+            )}
+
+            {!loading &&
+              rows.map((r) => {
                 const busy = busyId === r.application_id;
 
+                const statusLower = String(r.application_status || "").toLowerCase();
+                const statusPill =
+                  statusLower === "approved"
+                    ? pill("approved", "#dcfce7", "#166534")
+                    : statusLower === "rejected"
+                    ? pill("rejected", "#fee2e2", "#991b1b")
+                    : statusLower === "info_requested"
+                    ? pill("info requested", "#ffedd5", "#9a3412")
+                    : pill("submitted", "#fef9c3", "#854d0e");
+
                 return (
-                  <tr key={r.application_id} style={{ borderTop: "1px solid #e5e7eb" }}>
+                  <tr key={r.application_id} style={{ borderTop: "1px solid #f3f4f6" }}>
                     <td style={cell}>
                       <div style={{ fontWeight: 800 }}>
                         {r.investor_name || "—"} — {r.email}
                       </div>
-                      <div style={{ color: "#6b7280" }}>{r.organization || "—"}</div>
+                      <div style={{ color: "#6b7280", fontSize: 12 }}>{r.organization || "—"}</div>
                       <div style={{ color: "#6b7280", fontSize: 12 }}>
                         Ref: {r.reference_code || "—"} • Created: {fmtDate(r.application_created_at)}
                       </div>
                     </td>
 
-                    <td style={cell}>{statusChip(r.application_status)}</td>
-
+                    <td style={cell}>{statusPill}</td>
                     <td style={cell}>{fmtDate(r.nda_email_sent_at)}</td>
-
-                    <td style={cell}>
-                      <div>{r.nda_signed ? "✅ Yes" : "— No"}</div>
-                      <div style={{ color: "#6b7280", fontSize: 12 }}>{fmtDate(r.nda_signed_at)}</div>
-                    </td>
-
-                    <td style={cell}>{r.access_approved ? "✅ Yes" : "— No"}</td>
+                    <td style={cell}>{r.nda_signed ? pill("Yes", "#dcfce7", "#166534") : "— No"}</td>
+                    <td style={cell}>{r.access_approved ? pill("Yes", "#dcfce7", "#166534") : "—"}</td>
                     <td style={cell}>{fmtDate(r.access_expires_at)}</td>
+                    <td style={cell}>{r.days_outstanding ?? "—"}</td>
+                    <td style={cell}>{r.pending_extension_request ? pill("pending", "#e0f2fe", "#075985") : "—"}</td>
 
                     <td style={cell}>
-                      {r.days_outstanding == null ? "—" : r.days_outstanding}
-                      {typeof r.days_outstanding === "number" && r.days_outstanding < 0 ? " (expired)" : ""}
-                    </td>
-
-                    <td style={cell}>
-                      {!r.pending_extension_request ? (
-                        <span style={{ color: "#6b7280" }}>—</span>
-                      ) : (
-                        <div>
-                          <div style={{ fontWeight: 800 }}>Pending</div>
-                          <div style={{ fontSize: 12, color: "#6b7280" }}>
-                            Until: {fmtDate(r.pending_extension_request.requested_until)}
-                          </div>
-                          {r.pending_extension_request.reason ? (
-                            <div style={{ fontSize: 12, color: "#6b7280" }}>
-                              {r.pending_extension_request.reason}
-                            </div>
-                          ) : null}
-
-                          <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                            <button
-                              disabled={busy}
-                              onClick={() => approveExtension(r.pending_extension_request!.id)}
-                              style={btnStyle("primary", busy)}
-                              title="Approve access extension request"
-                            >
-                              Approve
-                            </button>
-
-                            <button
-                              disabled={busy}
-                              onClick={() => rejectExtension(r.pending_extension_request!.id)}
-                              style={btnStyle("secondary", busy)}
-                              title="Reject access extension request"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </td>
-
-                    <td style={cell}>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {canShowApprove(r) && (
                           <button
                             disabled={busy}
                             onClick={() => adminAction(r.application_id, "approve")}
                             style={btnStyle("primary", busy)}
-                            title="Approve application and send NDA"
+                            title="Approve + send NDA"
                           >
                             Approve + Send NDA
                           </button>
@@ -335,7 +378,12 @@ export default function DashboardClient() {
                         {canShowRequestInfo(r) && (
                           <button
                             disabled={busy}
-                            onClick={() => adminAction(r.application_id, "request_info")}
+                            onClick={() => {
+                              setRequestInfoId(r.application_id);
+                              setRequestInfoEmail(r.email);
+                              setRequestInfoMessage("");
+                              setRequestInfoOpen(true);
+                            }}
                             style={btnStyle("secondary", busy)}
                             title="Request additional information from investor"
                           >
@@ -346,10 +394,7 @@ export default function DashboardClient() {
                         {canShowReject(r) && (
                           <button
                             disabled={busy}
-                            onClick={() => {
-                              const ok = confirm("Reject this investor application?");
-                              if (ok) adminAction(r.application_id, "reject");
-                            }}
+                            onClick={() => adminAction(r.application_id, "reject")}
                             style={btnStyle("danger", busy)}
                             title="Reject application"
                           >
@@ -372,17 +417,16 @@ export default function DashboardClient() {
                 );
               })}
 
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={9} style={{ padding: 14, color: "#6b7280" }}>
-                    No results.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+            {!loading && rows.length === 0 && (
+              <tr>
+                <td colSpan={9} style={{ padding: 14, color: "#6b7280" }}>
+                  No results.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

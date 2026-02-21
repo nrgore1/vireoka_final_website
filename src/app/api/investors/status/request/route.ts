@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     // Check existence (do not reveal result to client)
     const [appRes, invRes] = await Promise.all([
       sb.from("investor_applications")
-        .select("id,email")
+        .select("id,email,investor_name,status,created_at")
         .eq("email", email)
         .order("created_at", { ascending: false })
         .limit(1),
@@ -66,7 +66,6 @@ export async function POST(req: Request) {
     });
 
     if (insErr) {
-      // Don't reveal details to user; log server-side
       console.error("[status/request] insert error:", insErr);
       return NextResponse.json(generic);
     }
@@ -79,10 +78,12 @@ export async function POST(req: Request) {
         email,
         statusUrl,
         expiresHours: TTL_HOURS,
+        name: app?.investor_name ?? null,
+        applicationStatus: app?.status ?? null,
+        applicationCreatedAt: app?.created_at ?? null,
       });
     } catch (e) {
       console.error("[status/request] email send error:", e);
-      // still return generic
     }
 
     return NextResponse.json(generic);
