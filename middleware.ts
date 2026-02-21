@@ -1,29 +1,57 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(req: NextRequest) {
-  const { pathname, search } = req.nextUrl;
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  // Only protect admin pages
-  if (!pathname.startsWith("/admin")) return NextResponse.next();
-  if (pathname === "/admin/login" || pathname.startsWith("/admin/login/")) return NextResponse.next();
-  if (pathname === "/admin/logout" || pathname.startsWith("/admin/logout/")) return NextResponse.next();
+  if (!pathname.startsWith("/portal")) return NextResponse.next();
 
-  const hasSession =
-    !!req.cookies.get("sb-access-token") ||
-    !!req.cookies.get("supabase-auth-token") ||
-    [...req.cookies.getAll()].some((c) => c.name.includes("sb-") && c.name.includes("-auth-token"));
+  // allow Next static assets
+  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon")) {
+    return NextResponse.next();
+  }
 
-  if (!hasSession) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/admin/login";
-    url.searchParams.set("next", pathname + (search || ""));
-    return NextResponse.redirect(url);
+  // call server access-check using current cookies
+  const checkUrl = req.nextUrl.clone();
+  checkUrl.pathname = "/api/portal/access-check";
+  checkUrl.search = "";
+
+  let res: Response;
+  try {
+    res = await fetch(checkUrl, {
+      headers: {
+        cookie: req.headers.get("cookie") || "",
+      },
+    });
+  } catch {
+    const dest = req.nextUrl.clone();
+    dest.pathname = "/investors/status";
+    return NextResponse.redirect(dest);
+  }
+
+  const data = await res.json().catch(() => null);
+
+  // if not logged in -> send to investor entry
+  if (!res.ok || !data?.ok) {
+    const dest = req.nextUrl.clone();
+    dest.pathname = "/investors";
+    return NextResponse.redirect(dest);
+  }
+
+  // logged in but not allowed -> route to reason page
+  if (!data.allowed) {
+    const dest = req.nextUrl.clone();
+    dest.pathname =
+      data.reason === "expired" ? "/portal/expired" :
+      data.reason === "nda_required" ? "/portal/pending?step=nda" :
+      data.reason === "grant_required" ? "/portal/pending?step=activation" :
+      "/investors/status";
+    return NextResponse.redirect(dest);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/portal/:path*"],
 };
