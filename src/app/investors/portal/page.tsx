@@ -1,35 +1,18 @@
-import { investorGate } from "@/lib/investorGate";
+import { requireInvestorAccess } from "@/lib/investorGate";
 
 export const metadata = { title: "Investor Portal" };
 
 export default async function InvestorPortalPage() {
-  // Enforces:
-  // - must have session
-  // - must have NDA accepted (based on your gate)
-  await investorGate();
+  // Enforce access on the server before rendering.
+  await requireInvestorAccess();
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
-      <h1 className="text-3xl font-semibold">Investor Portal</h1>
-      <p className="mt-3 text-sm text-gray-600">
-        Welcome. Your access is active. This page will contain the deck, updates, and diligence resources.
+    <main style={{ maxWidth: 1000, margin: "40px auto", padding: "0 16px" }}>
+      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Investor Portal</h1>
+      <p style={{ color: "#6b7280" }}>
+        You have access. If you believe this is incorrect, please contact support.
       </p>
-
-      <div className="mt-8 grid gap-4">
-        <div className="rounded-xl border p-6">
-          <div className="text-sm font-semibold">Pitch Deck</div>
-          <p className="mt-2 text-sm text-gray-600">
-            Add your deck link / API route here (you already have /api/investors/deck in the repo).
-          </p>
-        </div>
-
-        <div className="rounded-xl border p-6">
-          <div className="text-sm font-semibold">Company Materials</div>
-          <p className="mt-2 text-sm text-gray-600">
-            Financials, traction, FAQ, and updates go here.
-          </p>
-        </div>
-      </div>
+      {/* TODO: render portal content */}
     </main>
   );
 }
