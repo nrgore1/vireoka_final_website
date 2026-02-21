@@ -56,8 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Analytics />
 
         <header className="border-b border-vireoka-line bg-white">
-          <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
+          {/* Key change: flex-wrap + gaps so nav drops below on narrow widths instead of overlapping */}
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+            <Link href="/" className="flex items-center gap-3 shrink-0">
               <Image
                 src="/Vireoka_opfficial_logo.png"
                 alt="Vireoka logo"
@@ -65,17 +66,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 height={36}
                 priority
               />
-              <span className="font-semibold text-lg tracking-tight text-vireoka-indigo">
+              <span className="font-semibold text-lg tracking-tight text-vireoka-indigo whitespace-nowrap">
                 Vireoka
               </span>
             </Link>
 
-            <nav className="flex items-center gap-6 text-sm">
+            {/* Nav becomes full-width on small screens so it wraps cleanly under the logo */}
+            <nav className="w-full md:w-auto flex flex-wrap items-center gap-x-6 gap-y-2 text-sm md:justify-end">
               {nav.map((n) => (
                 <Link
                   key={n.href}
                   href={n.href}
-                  className="text-vireoka-graphite hover:text-vireoka-indigo"
+                  className="text-vireoka-graphite hover:text-vireoka-indigo whitespace-nowrap"
                 >
                   {n.label}
                 </Link>
@@ -84,7 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link
                 href="/investors"
                 className="rounded-md border border-vireoka-line px-3 py-1.5 text-sm
-                           text-vireoka-indigo hover:bg-vireoka-ash"
+                           text-vireoka-indigo hover:bg-vireoka-ash whitespace-nowrap"
               >
                 Investor access
               </Link>
@@ -92,10 +94,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        <main className="mx-auto max-w-6xl px-6 py-16">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 sm:px-6 py-12 sm:py-16">{children}</main>
 
         <footer className="border-t border-vireoka-line bg-vireoka-ash">
-          <div className="mx-auto max-w-6xl px-6 py-12 grid gap-8 md:grid-cols-3 text-sm">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 grid gap-8 md:grid-cols-3 text-sm">
             <div>
               <p className="font-medium text-vireoka-indigo">Vireoka</p>
               <p className="mt-2 text-neutral-600">

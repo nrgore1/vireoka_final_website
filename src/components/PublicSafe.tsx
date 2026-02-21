@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function PublicSafe() {
   return (
-    <section className="mx-auto max-w-6xl px-6 py-16">
-      <div className="rounded-xl border p-8">
+    <section className="mx-auto max-w-6xl px-4 sm:px-6 py-12 sm:py-16">
+      <div className="rounded-xl border p-6 sm:p-8">
         <h3 className="mb-3 font-semibold">Public-safe by design</h3>
 
         <p className="mb-4 max-w-3xl">
