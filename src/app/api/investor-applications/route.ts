@@ -1,86 +1,56 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { fanoutInvestorLead } from "@/lib/investors/fanout";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-function normalizeEmail(email: unknown) {
-  return String(email || "").trim().toLowerCase();
-}
-
+/**
+ * Compatibility endpoint.
+ * The UI posts to /api/investor-applications, but the existing working backend
+ * likely lives at /api/investors/request-access.
+ *
+ * This route forwards the request and maps field names safely.
+ */
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
 
-    const investor_name = String(body.investor_name || "").trim();
-    const email = normalizeEmail(body.email);
-    const organization = String(body.organization || "").trim();
-    const role = String(body.role || "").trim();
-    const investor_type = String(body.investor_type || "").trim();
+    // Map the newer apply payload to the existing endpoint fields.
+    const mapped = {
+      fullName: body?.investor_name ?? body?.fullName ?? body?.name ?? "",
+      email: body?.email ?? "",
+      company: body?.organization ?? body?.company ?? "",
+      role: body?.role ?? "",
+      investor_type: body?.investor_type ?? body?.investorType ?? "",
+      check_size: body?.check_size ?? "",
+      horizon: body?.horizon ?? "",
+      message: body?.intent ?? body?.message ?? "",
+      // keep any other fields in case backend stores metadata
+      ...body,
+    };
 
-    if (!investor_name || !email || !organization) {
-      return NextResponse.json(
-        { ok: false, error: "investor_name, email, and organization are required." },
-        { status: 400 }
-      );
-    }
+    // Forward to existing endpoint on the same host
+    const url = new URL(req.url);
+    url.pathname = "/api/investors/request-access";
 
-    // NOTE: best if you have UNIQUE(email) on investor_applications to prevent duplicates.
-    const { data, error } = await supabase
-      .from("investor_applications")
-      .upsert(
-        {
-          investor_name,
-          email,
-          organization,
-          status: "submitted",
-          metadata: {
-            role: role || null,
-            investor_type: investor_type || null,
-          },
-        },
-        { onConflict: "email" }
-      )
-      .select("id,reference_code")
-      .single();
-
-    if (error) {
-      console.error("[investor-applications] supabase error:", error);
-      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-    }
-
-    // Audit (best-effort)
-    await supabase.from("investor_application_audit_logs").insert({
-      application_id: data.id,
-      action: "submitted",
-      performed_by: null,
-      metadata: { via: "public_api" },
+    const r = await fetch(url.toString(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(mapped),
     });
 
-    // Fanout (internal email + Airtable + HubSpot) — best-effort; never fail the applicant
+    const text = await r.text();
+    let json: any = null;
     try {
-      await fanoutInvestorLead({
-        kind: "application",
-        investor_name,
-        full_name: investor_name,
-        email,
-        organization,
-        company: organization,
-        role,
-        investor_type,
-        reference_code: data.reference_code,
-      });
-    } catch (e) {
-      console.error("[investor-applications] fanout error:", e);
+      json = JSON.parse(text);
+    } catch {
+      json = { raw: text };
     }
 
-    return NextResponse.json({ ok: true, reference_code: data.reference_code });
-  } catch (err: any) {
-    console.error("[investor-applications] api error:", err);
-    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
+    return NextResponse.json(json, { status: r.status });
+  } catch (e: any) {
+    return NextResponse.json(
+      { ok: false, error: e?.message ?? "Server error" },
+      { status: 500 }
+    );
   }
 }
