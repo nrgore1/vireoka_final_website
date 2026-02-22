@@ -2,10 +2,20 @@
 
 import { useState } from "react";
 
+const INVESTOR_TYPES = [
+  { value: "VC", label: "Venture Capital" },
+  { value: "Angel", label: "Angel Investor" },
+  { value: "Family Office", label: "Family Office" },
+  { value: "Corporate", label: "Corporate / Strategic" },
+  { value: "PE", label: "Private Equity" },
+  { value: "Other", label: "Other" },
+];
+
 export default function InvestorRequestForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
+  const [investorType, setInvestorType] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [ok, setOk] = useState(false);
@@ -23,7 +33,13 @@ export default function InvestorRequestForm() {
       const res = await fetch("/api/investors/request-access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, company, message }),
+        body: JSON.stringify({
+          fullName,
+          email,
+          company,
+          investor_type: investorType,
+          message,
+        }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -74,6 +90,21 @@ export default function InvestorRequestForm() {
       <div className="grid gap-1">
         <label className="text-sm font-medium">Company</label>
         <input className="rounded-md border px-3 py-2" value={company} onChange={(e) => setCompany(e.target.value)} />
+      </div>
+
+      <div className="grid gap-1">
+        <label className="text-sm font-medium">Investor type</label>
+        <select
+          className="rounded-md border px-3 py-2"
+          value={investorType}
+          onChange={(e) => setInvestorType(e.target.value)}
+          required
+        >
+          <option value="">Select…</option>
+          {INVESTOR_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>{t.label}</option>
+          ))}
+        </select>
       </div>
 
       <div className="grid gap-1">

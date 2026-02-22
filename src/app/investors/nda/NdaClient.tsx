@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { NdaViewer } from "@/components/investor/NdaViewer";
 
 type ValidateOk = {
   ok: true;
@@ -26,7 +25,6 @@ type ValidateResponse = ValidateOk | ValidateErr;
 export default function NdaClient() {
   const params = useSearchParams();
   const router = useRouter();
-
   const token = useMemo(() => params.get("token") || "", [params]);
 
   const [loading, setLoading] = useState(true);
@@ -37,6 +35,8 @@ export default function NdaClient() {
 
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,7 +58,6 @@ export default function NdaClient() {
       });
 
       const j = (await r.json().catch(() => null)) as ValidateResponse | null;
-
       if (cancelled) return;
 
       if (!r.ok || !j) {
@@ -69,7 +68,6 @@ export default function NdaClient() {
 
       setValidate(j);
 
-      // If already used, route to confirmation (idempotent UX)
       if ((j as any).ok && (j as any).used) {
         router.replace("/investors/nda-signed");
         return;
@@ -79,55 +77,51 @@ export default function NdaClient() {
     }
 
     run();
-
     return () => {
       cancelled = true;
     };
   }, [token, router]);
 
-  async function accept() {
+  async function continueToSign() {
     setMsg(null);
 
-    if (!token) {
-      setMsg("Missing token.");
-      return;
-    }
-    if (!signerName.trim()) {
-      setMsg("Please enter your full legal name.");
-      return;
-    }
-    if (!agree) {
-      setMsg("Please confirm you agree to the NDA.");
-      return;
-    }
+    if (!token) return setMsg("Missing token.");
+    if (!signerName.trim()) return setMsg("Please enter your full legal name.");
+    if (!agree) return setMsg("Please confirm you agree to the NDA.");
+
+    const email = String((validate as any)?.email || "").trim().toLowerCase();
+    if (!email) return setMsg("Missing email for this NDA link. Please contact support.");
 
     setSubmitting(true);
 
-    const r = await fetch("/api/investors/nda/sign", {
+    const r = await fetch("/api/investors/nda/signwell/start", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         token,
         signer_name: signerName.trim(),
-        nda_version: "v1",
+        signer_email: email,
       }),
     });
 
     const j = await r.json().catch(() => null);
     setSubmitting(false);
 
-    if (!r.ok || !j?.ok) {
+    if (!r.ok || !j?.ok || !j?.iframe_url) {
       const detail = j?.error ? ` (${String(j.error)})` : "";
-      setMsg(`Unable to record NDA acceptance${detail}`);
-      return;
+      return setMsg(`Unable to start SignWell signing${detail}`);
     }
 
-    router.push("/investors/nda-signed");
+    // Keep signerName for the nda-signed page to record acceptance without webhooks.
+    try {
+      sessionStorage.setItem("vireoka_signer_name", signerName.trim());
+      sessionStorage.setItem("vireoka_nda_token", token);
+    } catch {}
+
+    setIframeUrl(j.iframe_url);
   }
 
-  if (loading) {
-    return <div className="max-w-3xl py-8">Loading…</div>;
-  }
+  if (loading) return <div className="max-w-3xl py-8">Loading…</div>;
 
   if (!validate || (validate as any).ok === false) {
     const err = (validate as any)?.error || "Invalid link.";
@@ -135,9 +129,7 @@ export default function NdaClient() {
       <div className="max-w-2xl space-y-4 py-8">
         <h1 className="text-2xl font-semibold">NDA Link Problem</h1>
         <p className="text-sm text-neutral-700">{err}</p>
-        <a className="text-sm underline" href="/investors/status">
-          Check application status
-        </a>
+        <a className="text-sm underline" href="/investors/status">Check application status</a>
       </div>
     );
   }
@@ -149,57 +141,70 @@ export default function NdaClient() {
         <p className="text-sm text-neutral-700">
           This NDA link has expired. Please request a new link from the email you received or contact support.
         </p>
-        <a className="text-sm underline" href="/investors/status">
-          Check application status
-        </a>
+        <a className="text-sm underline" href="/investors/status">Check application status</a>
       </div>
     );
   }
 
+  const email = String((validate as any)?.email || "").toLowerCase();
+
   return (
-    <div className="max-w-3xl space-y-6 py-6">
+    <div className="max-w-4xl space-y-6 py-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold">Investor NDA</h1>
         <p className="text-sm text-neutral-700">
-          Review the NDA below. To continue, enter your name and confirm acceptance.
+          Review and sign the NDA via SignWell. After signing, you’ll be returned automatically.
         </p>
       </div>
 
-      <div className="rounded-xl border p-4">
-        <NdaViewer />
-      </div>
+      {!iframeUrl ? (
+        <div className="space-y-3 rounded-xl border p-4">
+          <div className="text-sm text-neutral-700">
+            Signing as <span className="font-semibold">{email || "—"}</span>
+          </div>
 
-      <div className="space-y-3 rounded-xl border p-4">
-        <label className="block text-sm font-medium">Full legal name</label>
-        <input
-          value={signerName}
-          onChange={(e) => setSignerName(e.target.value)}
-          placeholder="Jane Investor"
-          className="w-full rounded-md border px-3 py-2 text-sm"
-        />
-
-        <label className="flex items-start gap-2 text-sm">
+          <label className="block text-sm font-medium">Full legal name</label>
           <input
-            type="checkbox"
-            checked={agree}
-            onChange={(e) => setAgree(e.target.checked)}
-            className="mt-1"
+            value={signerName}
+            onChange={(e) => setSignerName(e.target.value)}
+            placeholder="Jane Investor"
+            className="w-full rounded-md border px-3 py-2 text-sm"
           />
-          <span>
-            I have read and agree to the NDA terms and confirm I am authorized to accept on behalf of myself and/or my organization.
-          </span>
-        </label>
 
-        <button
-          onClick={accept}
-          disabled={submitting}
-          className="rounded-md bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-60"
-        >
-          {submitting ? "Recording…" : "Accept NDA"}
-        </button>
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={agree}
+              onChange={(e) => setAgree(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              I have read and agree to the NDA terms and confirm I am authorized to accept on behalf of myself and/or my organization.
+            </span>
+          </label>
 
-        {msg && <div className="text-sm text-red-600">{msg}</div>}
-      </div>
+          <button
+            onClick={continueToSign}
+            disabled={submitting}
+            className="rounded-md bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-60"
+          >
+            {submitting ? "Starting…" : "Continue to Sign"}
+          </button>
+
+          {msg && <div className="text-sm text-red-600">{msg}</div>}
+        </div>
+      ) : (
+        <div className="rounded-xl border overflow-hidden">
+          <div className="relative w-full" style={{ paddingTop: "130%" }}>
+            <iframe
+              title="SignWell NDA"
+              src={iframeUrl}
+              className="absolute inset-0 w-full h-full"
+              style={{ border: 0 }}
+            />
+          </div>
+        </div>
+      )}
 
       <p className="text-xs text-neutral-500">
         Having trouble? Reply to the email you received or contact support.
