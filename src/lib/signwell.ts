@@ -4,6 +4,14 @@ function requireEnv(name: string): string {
   return v;
 }
 
+/**
+ * Create a SignWell document from a template for embedded signing.
+ * Uses env vars:
+ *  - SIGNWELL_API_KEY
+ *  - SIGNWELL_TEMPLATE_ID
+ *
+ * Webhooks not required for this flow.
+ */
 export async function signwellCreateDocumentFromTemplate(args: {
   signerName: string;
   signerEmail: string;
@@ -13,7 +21,6 @@ export async function signwellCreateDocumentFromTemplate(args: {
   const apiKey = requireEnv("SIGNWELL_API_KEY");
   const templateId = requireEnv("SIGNWELL_TEMPLATE_ID");
 
-  // SignWell: create document from template
   const r = await fetch("https://www.signwell.com/api/v1/document_templates/documents/", {
     method: "POST",
     headers: {

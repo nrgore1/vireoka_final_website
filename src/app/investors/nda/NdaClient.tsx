@@ -58,6 +58,7 @@ export default function NdaClient() {
       });
 
       const j = (await r.json().catch(() => null)) as ValidateResponse | null;
+
       if (cancelled) return;
 
       if (!r.ok || !j) {
@@ -89,8 +90,8 @@ export default function NdaClient() {
     if (!signerName.trim()) return setMsg("Please enter your full legal name.");
     if (!agree) return setMsg("Please confirm you agree to the NDA.");
 
-    const email = String((validate as any)?.email || "").trim().toLowerCase();
-    if (!email) return setMsg("Missing email for this NDA link. Please contact support.");
+    const signerEmail = String((validate as any)?.email || "").trim().toLowerCase();
+    if (!signerEmail) return setMsg("Missing email for this NDA link. Please contact support.");
 
     setSubmitting(true);
 
@@ -100,7 +101,7 @@ export default function NdaClient() {
       body: JSON.stringify({
         token,
         signer_name: signerName.trim(),
-        signer_email: email,
+        signer_email: signerEmail,
       }),
     });
 
@@ -112,10 +113,9 @@ export default function NdaClient() {
       return setMsg(`Unable to start SignWell signing${detail}`);
     }
 
-    // Keep signerName for the nda-signed page to record acceptance without webhooks.
     try {
-      sessionStorage.setItem("vireoka_signer_name", signerName.trim());
       sessionStorage.setItem("vireoka_nda_token", token);
+      sessionStorage.setItem("vireoka_signer_name", signerName.trim());
     } catch {}
 
     setIframeUrl(j.iframe_url);
@@ -153,7 +153,7 @@ export default function NdaClient() {
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold">Investor NDA</h1>
         <p className="text-sm text-neutral-700">
-          Review and sign the NDA via SignWell. After signing, you’ll be returned automatically.
+          This NDA is executed via SignWell. After signing, you’ll be returned automatically.
         </p>
       </div>
 
