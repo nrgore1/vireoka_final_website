@@ -1,18 +1,7 @@
-import { requireInvestorAccess } from "@/lib/investorGate";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Investor Portal" };
-
-export default async function InvestorPortalPage() {
-  await requireInvestorAccess();
-
-  return (
-    <main style={{ maxWidth: 1000, margin: "40px auto", padding: "0 16px" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Investor Portal</h1>
-      <p style={{ color: "#6b7280" }}>
-        Welcome to the investor portal.
-      </p>
-    </main>
-  );
+export default function Page() {
+  redirect("/portal/overview");
 }

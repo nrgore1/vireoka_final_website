@@ -1,50 +1,46 @@
-"use client";
-
-import React, { useEffect, useState } from 'react';
-import { supabaseBrowser } from '@/lib/supabase/browser';
-import { getActiveNdaTemplate } from '@/lib/investor/rpc';
-
-/**
- * NDA Viewer
- *
- * - Client component (uses hooks)
- * - Renders active NDA template from DB
- * - No hardcoded NDA content
- */
 export function NdaViewer() {
-  const [html, setHtml] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const embedUrl = process.env.NEXT_PUBLIC_SIGNWELL_NDA_EMBED_URL || "";
+  const pdfUrl = process.env.NEXT_PUBLIC_SIGNWELL_NDA_PDF_URL || "";
 
-  useEffect(() => {
-    const supabase = supabaseBrowser();
-    (async () => {
-      try {
-        const tpl = await getActiveNdaTemplate(supabase);
-        if (!tpl) {
-          setHtml('<p>No active NDA available.</p>');
-        } else {
-          setHtml(tpl.content_html);
-        }
-      } catch (e: any) {
-        setErr(e?.message ?? 'Failed to load NDA');
-      }
-    })();
-  }, []);
+  const src = embedUrl || pdfUrl;
 
-  if (err) {
+  if (!src) {
     return (
-      <div style={{ padding: 12, border: '1px solid #ddd', borderRadius: 8 }}>
-        Error: {err}
+      <div className="text-sm text-neutral-700">
+        No NDA source configured. Please set{" "}
+        <code className="rounded bg-neutral-100 px-1">NEXT_PUBLIC_SIGNWELL_NDA_EMBED_URL</code>{" "}
+        (preferred) or{" "}
+        <code className="rounded bg-neutral-100 px-1">NEXT_PUBLIC_SIGNWELL_NDA_PDF_URL</code>.
       </div>
     );
   }
 
-  if (!html) return null;
+  const isPdf = (!embedUrl && !!pdfUrl) || src.toLowerCase().includes(".pdf");
 
   return (
-    <div
-      style={{ padding: 12 }}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <div className="w-full">
+      <div className="text-xs text-neutral-500 mb-2">
+        {isPdf ? "NDA (PDF)" : "NDA"}
+      </div>
+
+      <div className="w-full overflow-hidden rounded-lg border bg-white">
+        {/* Responsive iframe */}
+        <div className="relative w-full" style={{ paddingTop: "129%" }}>
+          <iframe
+            title="Investor NDA"
+            src={src}
+            className="absolute inset-0 h-full w-full"
+            style={{ border: 0 }}
+            allow="clipboard-read; clipboard-write"
+          />
+        </div>
+      </div>
+
+      <div className="mt-2 text-xs">
+        <a className="underline" href={src} target="_blank" rel="noreferrer">
+          Open NDA in a new tab
+        </a>
+      </div>
+    </div>
   );
 }
