@@ -1,71 +1,38 @@
-"use client";
+import SubmitButton from './SubmitButton';
+import { submitInvestorApplication } from './actions';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+export const dynamic = 'force-dynamic';
 
 const INVESTOR_TYPES = [
-  { value: "Advisors", label: "Advisor (Time Investor)" },
-  { value: "Contractors", label: "Contractor (Technical Contributor)" },
-  { value: "Crowdsourcing", label: "Crowdsourcing Investor" },
-  { value: "Angel", label: "Angel Investor" },
-  { value: "VC", label: "Venture Capital (Tier-1 Lead)" },
-  { value: "Family Office", label: "Family Office" },
-  { value: "Corporate", label: "Corporate / Strategic" },
+  { value: 'Advisors', label: 'Advisor (Time Investor)' },
+  { value: 'Contractors', label: 'Contractor (Technical Contributor)' },
+  { value: 'Crowdsourcing', label: 'Crowdsourcing Investor' },
+  { value: 'Angel', label: 'Angel Investor ($25k–$250k)' },
+  { value: 'VC', label: 'Venture Capital (Tier-1 Lead)' },
+  { value: 'Family Office', label: 'Family Office' },
+  { value: 'Corporate', label: 'Corporate / Strategic' },
 ];
 
 const CHECK_SIZES = [
-  "Time-only / Advisory",
-  "$5k–$25k",
-  "$25k–$250k",
-  "$250k–$1M",
-  "$1M+",
-  "Strategic / Non-financial",
+  'Time-only / Advisory',
+  '$5k–$25k',
+  '$25k–$250k',
+  '$250k–$1M',
+  '$1M+',
+  'Strategic / Non-financial',
 ];
 
-const HORIZONS = ["0–3 months", "3–6 months", "6–12 months", "12+ months"];
+const HORIZONS = ['0–3 months', '3–6 months', '6–12 months', '12+ months'];
 
 export default function InvestorApplyPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const formData = new FormData(e.currentTarget);
-
-    const payload = {
-      investor_name: formData.get("investor_name"),
-      email: formData.get("email"),
-      organization: formData.get("organization"),
-      role: formData.get("role"),
-      investor_type: formData.get("investor_type"),
-
-      // Added fields (safe if backend ignores them)
-      check_size: formData.get("check_size"),
-      horizon: formData.get("horizon"),
-      intent: formData.get("intent"),
-      turnstileToken: formData.get("turnstileToken") || null,
-    };
-
-    const res = await fetch("/api/investor-applications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    setLoading(false);
-
-    if (!res.ok) {
-      setError("We were unable to submit your application. Please try again.");
-      return;
+  async function action(formData: FormData) {
+    'use server';
+    try {
+      await submitInvestorApplication(formData);
+    } catch (e: any) {
+      // Re-throw so Next shows it via error boundary / formState; page will show message below
+      throw e;
     }
-
-    router.push(`/investors/thank-you?ref=${json.reference_code ?? ""}`);
   }
 
   return (
@@ -76,7 +43,9 @@ export default function InvestorApplyPage() {
         Vireoka uses time-bound, tiered access and audit logging. Submit your information to request access to NDA-gated materials.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Next will display the thrown server action error as a runtime error unless we catch it with an error boundary.
+          So we keep the action simple and rely on server logs + quick schema check below. */}
+      <form action={action} className="space-y-6">
         <input name="investor_name" required placeholder="Full name" className="input" />
         <input name="email" type="email" required placeholder="Email address" className="input" />
         <input name="organization" required placeholder="Organization / Firm" className="input" />
@@ -85,21 +54,27 @@ export default function InvestorApplyPage() {
         <select name="investor_type" required className="input">
           <option value="">Investor type</option>
           {INVESTOR_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
           ))}
         </select>
 
         <select name="check_size" required className="input">
           <option value="">Skin in the game (check size / contribution)</option>
           {CHECK_SIZES.map((v) => (
-            <option key={v} value={v}>{v}</option>
+            <option key={v} value={v}>
+              {v}
+            </option>
           ))}
         </select>
 
         <select name="horizon" required className="input">
-          <option value="">Timeline (when do you need diligence)</option>
+          <option value="">Timeline (when do you need diligence?)</option>
           {HORIZONS.map((v) => (
-            <option key={v} value={v}>{v}</option>
+            <option key={v} value={v}>
+              {v}
+            </option>
           ))}
         </select>
 
@@ -110,18 +85,12 @@ export default function InvestorApplyPage() {
           className="input"
         />
 
-        <input type="hidden" name="turnstileToken" />
-
-        {error && <p className="text-red-600">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-md bg-black text-white py-3 font-medium disabled:opacity-50"
-        >
-          {loading ? "Submitting…" : "Submit application"}
-        </button>
+        <SubmitButton />
       </form>
+
+      <p className="mt-6 text-xs text-neutral-500">
+        If submission fails, check server logs for the Supabase error message (missing table/column is the most common cause).
+      </p>
     </main>
   );
 }
