@@ -1,34 +1,21 @@
+import { cookies } from "next/headers";
+import { normalizeTier, tierRank } from "@/lib/portal/tier";
+
 export type InvestorContext = {
   email: string;
-  investorType: string;   // advisor|contractor|crowd|angel|vc|family|corporate
-  tierRank: number;       // 10..40
-  expiresAt: string | null;
+  investorType: string;  // crowd|angel|vc|family|corporate|advisor|contractor
+  tierRank: number;
+  expiresAt?: string | null;
+  isAdmin: boolean;
+  previewTier?: string | null;
 };
 
-function normalizeType(v: any): string {
-  const s = String(v || "").trim().toLowerCase();
-  if (!s) return "crowd";
-  if (s.includes("advisor")) return "advisor";
-  if (s.includes("contract")) return "contractor";
-  if (s.includes("crowd")) return "crowd";
-  if (s.includes("angel")) return "angel";
-  if (s.includes("vc") || s.includes("venture")) return "vc";
-  if (s.includes("family")) return "family";
-  if (s.includes("corporate") || s.includes("strategic")) return "corporate";
-  return "crowd";
-}
-
-function tierRankFromType(t: string): number {
-  // fallback ordering (can be overridden by DB tier_rank)
-  switch (t) {
-    case "advisor": return 15;
-    case "contractor": return 15;
-    case "crowd": return 10;
-    case "angel": return 20;
-    case "family": return 35;
-    case "corporate": return 30;
-    case "vc": return 40;
-    default: return 10;
+async function readRole(sb: any, userId: string) {
+  try {
+    const { data } = await sb.from("profiles").select("role").eq("id", userId).maybeSingle();
+    return String(data?.role || "");
+  } catch {
+    return "";
   }
 }
 
@@ -36,41 +23,61 @@ export async function getInvestorContext(sb: any): Promise<InvestorContext> {
   const { data: userRes } = await sb.auth.getUser();
   const user = userRes?.user;
 
-  const email = String(user?.email || "").toLowerCase();
-
-  // best-effort: read from one of several tables (no hard dependency)
-  const candidates = ["investors", "profiles", "investor_portal_access", "portal_access", "investor_access"];
-
-  for (const table of candidates) {
-    try {
-      const byIdCol = table === "profiles" ? "id" : (table === "investors" ? "user_id" : "user_id");
-      const { data, error } = await (sb as any)
-        .from(table)
-        .select("*")
-        .eq(byIdCol, user?.id)
-        .maybeSingle();
-
-      if (error || !data) continue;
-
-      const investorType = normalizeType(
-        data?.stakeholder_type ?? data?.investor_type ?? data?.type ?? data?.segment ?? data?.category
-      );
-
-      const tierRank = Number(data?.tier_rank ?? data?.tierRank ?? tierRankFromType(investorType));
-      const expiresAt =
-        data?.access_expires_at ?? data?.expires_at ?? data?.expiresAt ?? null;
-
-      return {
-        email,
-        investorType,
-        tierRank,
-        expiresAt: expiresAt ? String(expiresAt) : null,
-      };
-    } catch {
-      continue;
-    }
+  if (!user) {
+    return {
+      email: "",
+      investorType: "crowd",
+      tierRank: 10,
+      expiresAt: null,
+      isAdmin: false,
+      previewTier: null,
+    };
   }
 
-  // fallback context
-  return { email, investorType: "crowd", tierRank: 10, expiresAt: null };
+  const role = String(await readRole(sb, user.id)).toLowerCase();
+  const isAdmin = role === "admin";
+
+  // Load investor row if present
+  let investorType = "crowd";
+  let rank = 10;
+  let expiresAt: string | null = null;
+
+  try {
+    const { data } = await sb
+      .from("investors")
+      .select("stakeholder_type,tier_rank,access_expires_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const st = String(data?.stakeholder_type || "").toLowerCase();
+    if (st) investorType = normalizeTier(st);
+
+    const tr = Number(data?.tier_rank);
+    if (Number.isFinite(tr) && tr > 0) rank = tr;
+
+    expiresAt = data?.access_expires_at || null;
+  } catch {}
+
+  // Admin-only preview override via cookie
+  let previewTier: string | null = null;
+  if (isAdmin) {
+    try {
+      const jar = await cookies();
+      const t = jar.get("vireoka_portal_preview_tier")?.value || "";
+      if (t) {
+        previewTier = normalizeTier(t);
+        investorType = previewTier;
+        rank = tierRank(previewTier as any);
+      }
+    } catch {}
+  }
+
+  return {
+    email: String(user.email || ""),
+    investorType,
+    tierRank: rank,
+    expiresAt,
+    isAdmin,
+    previewTier,
+  };
 }
