@@ -37,7 +37,7 @@ export default async function ThankYouPage({
           Non-Disclosure Agreement (NDA).
         </li>
         <li>
-          <strong>Investor access:</strong> Once the NDA is completed, your
+          <strong>Vireoka Intelligence:</strong> Once the NDA is completed, your
           investor login will be activated and credentials sent by email.
         </li>
       </ol>

@@ -1,104 +1,65 @@
-import Link from 'next/link';
+import Link from "next/link";
 
-export default function InvestorAccessPage() {
+export const dynamic = "force-dynamic";
+
+export default function InvestorsLandingPage() {
   return (
-    <div style={{ background: '#fafafa', padding: '80px 16px' }}>
-      <div style={{ maxWidth: 960, margin: '0 auto' }}>
-        <h1 style={{ fontSize: 32, fontWeight: 600 }}>
-          Investor access <span style={{ fontWeight: 400 }}>(NDA required)</span>
+    <main className="max-w-5xl mx-auto px-4 py-16 space-y-10">
+      <div className="space-y-4">
+        <h1 className="text-3xl font-semibold">
+          Strategic Access (NDA required)
         </h1>
 
-        <p style={{ marginTop: 16, fontSize: 16, color: '#444' }}>
-          We share detailed technical and financial materials with verified
-          investors under NDA.
-        </p>
-
-        <p style={{ fontSize: 16, color: '#444' }}>
+        <p className="text-neutral-700 max-w-2xl">
+          We share detailed technical, financial, and architectural materials
+          with verified collaborators under NDA.  
           Access is time-bound and reviewed manually to protect confidential IP.
         </p>
+      </div>
 
-        {/* Access steps */}
-        <div
-          style={{
-            marginTop: 40,
-            padding: 32,
-            borderRadius: 12,
-            background: '#fff',
-            border: '1px solid #e5e7eb',
-          }}
-        >
-          <h3 style={{ marginTop: 0, marginBottom: 16 }}>
-            Access steps
-          </h3>
+      <div className="rounded-xl border p-6 space-y-4">
+        <div className="font-semibold">Access steps</div>
 
-          <ol style={{ paddingLeft: 20, lineHeight: 1.7 }}>
-            <li>Apply with your investor details</li>
-            <li>Review and accept the NDA</li>
-            <li>Await approval (manual review)</li>
-            <li>Access granted (time-bound)</li>
-          </ol>
+        <ul className="text-sm text-neutral-700 space-y-1">
+          <li>Apply with your details</li>
+          <li>Review and accept the NDA</li>
+          <li>Await approval (manual review)</li>
+          <li>Access granted (time-bound)</li>
+        </ul>
 
-          <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
-            <Link href="/investors/apply">
-              <button
-                style={{
-                  padding: '10px 18px',
-                  background: '#111827',
-                  color: '#fff',
-                  borderRadius: 6,
-                  border: 'none',
-                }}
-              >
-                Apply
-              </button>
-            </Link>
+        <div className="flex gap-3 pt-3">
+          <Link
+            href="/investors/apply"
+            className="px-4 py-2 rounded-lg bg-black text-white text-sm"
+          >
+            Apply
+          </Link>
 
-            <Link href="/investors/status">
-              <button
-                style={{
-                  padding: '10px 18px',
-                  background: '#fff',
-                  borderRadius: 6,
-                  border: '1px solid #d1d5db',
-                }}
-              >
-                Check status
-              </button>
-            </Link>
+          <Link
+            href="/investors/status"
+            className="px-4 py-2 rounded-lg border text-sm"
+          >
+            Check status
+          </Link>
 
-            <Link href="/investors/portal">
-              <button
-                style={{
-                  padding: '10px 18px',
-                  background: '#fff',
-                  borderRadius: 6,
-                  border: '1px solid #d1d5db',
-                }}
-              >
-                Investor portal
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        {/* NDA explanation */}
-        <div
-          style={{
-            marginTop: 24,
-            padding: 24,
-            borderRadius: 12,
-            background: '#fff',
-            border: '1px solid #e5e7eb',
-          }}
-        >
-          <h3 style={{ marginTop: 0 }}>Why NDA gating exists</h3>
-          <p style={{ marginBottom: 0, color: '#444' }}>
-            Our public material is intentionally high-level. The NDA portal
-            contains demo access and deeper documentation intended only for
-            qualified investors.
-          </p>
+          <Link
+            href="/portal/overview"
+            className="px-4 py-2 rounded-lg border text-sm"
+          >
+            Vireoka Intelligence
+          </Link>
         </div>
       </div>
-    </div>
+
+      <div className="rounded-xl border p-6">
+        <div className="font-semibold mb-2">Why NDA gating exists</div>
+        <p className="text-sm text-neutral-700">
+          Our public materials are intentionally high-level.  
+          Vireoka Intelligence contains structured demonstrations of our
+          governed agentic workforce platform and is accessible only
+          to approved collaborators.
+        </p>
+      </div>
+    </main>
   );
 }

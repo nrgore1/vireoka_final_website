@@ -38,7 +38,7 @@ to review and accept the Non-Disclosure Agreement.
 
   await sendEmail({
     to: email,
-    subject: "Vireoka — Investor access request received",
+    subject: "Vireoka — Strategic Access request received",
     html,
   });
 }

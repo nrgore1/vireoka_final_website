@@ -21,7 +21,7 @@ export default function InvestorDesignPage() {
             href="/investors"
             className="rounded-md bg-neutral-900 text-white px-4 py-2 text-sm hover:opacity-90"
           >
-            Investor access
+            Vireoka Intelligence
           </Link>
           <Link
             href="/investors/portal"

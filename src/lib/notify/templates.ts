@@ -68,7 +68,7 @@ ${args.siteUrl}/api/investors/deck?commId=${args.commId}
 `;
 
   return {
-    subject: "Investor access approved — Vireoka",
+    subject: "Strategic Access approved — Vireoka",
     html,
     text,
   };

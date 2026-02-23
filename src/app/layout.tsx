@@ -88,7 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 className="rounded-md border border-vireoka-line px-3 py-1.5 text-sm
                            text-vireoka-indigo hover:bg-vireoka-ash whitespace-nowrap"
               >
-                Investor access
+                Vireoka Intelligence
               </Link>
             </nav>
           </div>
@@ -131,7 +131,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 className="inline-block mt-3 text-sm text-vireoka-teal
                            underline underline-offset-4"
               >
-                Investor access →
+                Vireoka Intelligence →
               </Link>
             </div>
           </div>

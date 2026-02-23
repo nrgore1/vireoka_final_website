@@ -46,7 +46,7 @@ export function InvestorPortalGate({
       <>
         {fallback ?? (
           <div style={{ padding: 16 }}>
-            Investor access required.
+            Vireoka Intelligence access required.
           </div>
         )}
       </>

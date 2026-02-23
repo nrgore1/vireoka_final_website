@@ -21,7 +21,7 @@ export const siteCopy = {
       "Ship faster with oversight that scales: councils, quorums, and confidence scoring.",
     ],
     ctaPrimary: { label: "Explore resources", href: "/resources" },
-    ctaSecondary: { label: "Investor access (NDA)", href: "/investors" },
+    ctaSecondary: { label: "Vireoka Intelligence (NDA)", href: "/investors" },
 
     sections: [
       {
@@ -80,7 +80,7 @@ export const siteCopy = {
   },
 
   investors: {
-    title: "Investor access (NDA required)",
+    title: "Strategic Access (NDA required)",
     body: [
       "We share detailed technical and financial materials with verified investors under NDA.",
       "Access is time-bound and reviewed manually to protect confidential IP.",

@@ -4,10 +4,14 @@ import { VdrCard } from "@/components/portal/VdrCard";
 
 export const dynamic = "force-dynamic";
 
+type SP = Record<string, string | string[] | undefined>;
+
 async function fetchIndex(cookieHeader: string, asTier?: string) {
   const qs = asTier ? `?asTier=${encodeURIComponent(asTier)}` : "";
-  const r = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ""}/api/portal/vdr-index${qs}`, {
-    headers: { cookie: cookieHeader },
+
+  // Use relative fetch on server; Next will include host automatically.
+  const r = await fetch(`/api/portal/vdr-index${qs}`, {
+    headers: cookieHeader ? { cookie: cookieHeader } : {},
     cache: "no-store",
   }).catch(() => null);
 
@@ -15,14 +19,28 @@ async function fetchIndex(cookieHeader: string, asTier?: string) {
   return r.json().catch(() => null);
 }
 
-export default async function Page({ searchParams }: { searchParams?: Record<string, string> }) {
+export default async function Page(props: { searchParams?: Promise<SP> }) {
   const sb = await supabaseServerClient();
-  const cookieHeader = (sb as any)?.cookies?.toString?.() || "";
 
-  // admin preview: /portal/vdr?asTier=angel
-  const asTier = searchParams?.asTier;
+  // Next 16: searchParams is a Promise
+  const sp = (props.searchParams ? await props.searchParams : {}) as SP;
+
+  const asTierRaw = sp?.asTier;
+  const asTier =
+    typeof asTierRaw === "string"
+      ? asTierRaw
+      : Array.isArray(asTierRaw)
+      ? asTierRaw[0]
+      : undefined;
+
+  // Pass cookies through to the API route
+  const cookieHeader =
+    (sb as any)?.headers?.get?.("cookie") ||
+    (sb as any)?.cookies?.toString?.() ||
+    "";
 
   const data = await fetchIndex(cookieHeader, asTier);
+
   const items = data?.items || [];
   const rank = Number(data?.effective_rank || 10);
 
@@ -34,7 +52,8 @@ export default async function Page({ searchParams }: { searchParams?: Record<str
         </div>
         <h1 className="text-3xl font-semibold">Diligence Materials</h1>
         <p className="text-neutral-700 max-w-3xl">
-          All items are confidential, time-bound, and audited. Some materials are visible but locked depending on your access tier.
+          All items are confidential, time-bound, watermarked, and logged. Some materials are visible but
+          locked depending on your access tier.
         </p>
 
         <div className="text-sm text-neutral-600">

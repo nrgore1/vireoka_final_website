@@ -69,7 +69,7 @@ export default function RequestAccessPage() {
         <ul>
           <li>Internal review</li>
           <li>NDA review</li>
-          <li>Investor access activation</li>
+          <li>Strategic access activation</li>
         </ul>
         <p>
           Questions? Contact us at info@vireoka.com

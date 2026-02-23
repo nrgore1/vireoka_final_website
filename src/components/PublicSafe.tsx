@@ -19,7 +19,7 @@ export default function PublicSafe() {
         </p>
 
         <Link href="/investors" className="text-sm underline">
-          Investor access →
+          Vireoka Intelligence →
         </Link>
       </div>
     </section>

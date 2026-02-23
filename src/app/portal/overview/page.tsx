@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { supabaseServerClient } from "@/lib/supabase/serverClient";
 import { getInvestorContext } from "@/lib/portal/context";
 import { LockedCard } from "@/components/portal/LockedCard";
@@ -8,75 +7,82 @@ export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const sb = await supabaseServerClient();
-  const { data: userRes } = await sb.auth.getUser();
-  if (!userRes?.user) redirect("/portal/login");
-
   const ctx = await getInvestorContext(sb as any);
 
   const headline =
     ctx.investorType === "vc"
-      ? "Vireoka Intelligence for Full Due Diligence"
+      ? "Full diligence environment for governed agentic workforces"
       : ctx.investorType === "family"
-      ? "Vireoka Investor Portal for Long-Term Capital"
+      ? "Long-term capital + risk framing for governed AI operations"
       : ctx.investorType === "corporate"
-      ? "Vireoka Strategic Partner Portal"
+      ? "Strategic partner workspace for integration + governance"
       : ctx.investorType === "angel"
-      ? "Vireoka Investor Portal (Intermediate Access)"
+      ? "Intermediate access to product + governance narrative"
       : ctx.investorType === "advisor"
-      ? "Vireoka Advisory Portal (Collaborative)"
+      ? "Collaborative advisory environment (controlled disclosure)"
       : ctx.investorType === "contractor"
-      ? "Vireoka Contractor Portal (Functional)"
-      : "Vireoka Investor Portal";
+      ? "Functional technical workspace (sanitized architecture)"
+      : "Controlled strategic access environment";
 
   const modules = [
     {
       href: "/portal/vdr",
       title: "Virtual Data Room",
-      subtitle: "Diligence Materials",
-      desc: "Tiered documents across legal, security, market, traction, GTM, and financials.",
+      subtitle: "Governed Diligence Materials",
+      desc: "Structured disclosures across governance, infrastructure, financials, GTM, and agent architecture.",
       required: 10,
     },
     {
       href: "/portal/intelligence",
-      title: "AI Data Room Search",
-      subtitle: "Ask + Cite",
-      desc: "Ask diligence questions over controlled documents and get cited answers.",
-      required: requiredRankForFeature("intelligence"),
+      title: "Agentic Intelligence Layer",
+      subtitle: "Ask + Cite + Model",
+      desc: "Query controlled materials and run deterministic scenario analysis—governed, logged, and citation-backed.",
+      required: requiredRankForFeature("intelligence"), // Angel+
     },
     {
       href: "/portal/cap-table",
-      title: "Cap Table Simulator",
-      subtitle: "$10M round modeling",
-      desc: "Interactive dilution, valuation, and waterfall outcomes for the raise.",
-      required: requiredRankForFeature("cap_table"),
+      title: "Capital Modeling",
+      subtitle: "$10M Raise Simulation",
+      desc: "Interactive valuation, dilution, and ownership modeling designed for fast diligence alignment.",
+      required: requiredRankForFeature("cap_table"), // Angel+
     },
     {
       href: "/portal/scenarios",
-      title: "Scenario Simulator",
-      subtitle: "Deterministic projections",
-      desc: "CAC, churn, ARPU, expansion, EBITDA, downside cases—no hallucinations.",
-      required: requiredRankForFeature("scenarios"),
+      title: "Strategic Scenario Simulator",
+      subtitle: "Growth + Risk Projections",
+      desc: "Stress-test TAM capture, CAC, ARPU, churn, expansion, burn, and ROI paths under governance constraints.",
+      required: requiredRankForFeature("scenarios"), // Corporate/Family/VC
     },
     {
       href: "/portal/activity",
-      title: "Your Activity",
-      subtitle: "Audit log",
-      desc: "Your portal activity is logged for security and compliance.",
+      title: "Your Activity Log",
+      subtitle: "Audit Transparency",
+      desc: "A full record of your interactions within this controlled environment for security and compliance.",
       required: 10,
     },
   ];
 
   return (
-    <main className="max-w-6xl mx-auto px-4 py-10 space-y-8">
-      <div className="space-y-2">
-        <div className="text-xs tracking-wide uppercase text-neutral-500 font-semibold">
-          Vireoka • Controlled Diligence Environment
+    <main className="max-w-6xl mx-auto px-4 py-12 space-y-10">
+      <div className="space-y-4">
+        <div className="text-xs uppercase tracking-wide text-neutral-500 font-semibold">
+          Vireoka • Governed Agentic Workforce Platform
         </div>
-        <h1 className="text-3xl font-semibold">{headline}</h1>
+
+        <h1 className="text-3xl font-semibold">Vireoka Intelligence</h1>
+
         <p className="text-neutral-700 max-w-3xl">
-          A $10M raise requires controlled disclosure architecture—not just a folder of PDFs.
-          This portal is time-bound, tiered, watermarked, and logged.
+          Vireoka Intelligence is a controlled-access strategic workspace for capital partners, advisors,
+          technologists, and collaborators. It demonstrates how governed AI agents operate as structured
+          digital employees inside enterprise environments.
         </p>
+
+        <p className="text-neutral-700 max-w-3xl">
+          Our approach breaks the cliché of “AI tools” and “generic copilots.” We build agentic ecosystems
+          where autonomy is scoped by policy, actions are logged, and outcomes are reproducible—so AI can scale
+          without creating uncontrolled operational risk.
+        </p>
+
         <div className="text-sm text-neutral-600">
           Current tier: <span className="font-semibold">{tierLabel(ctx.tierRank)}</span>
           {ctx.isAdmin && ctx.previewTier ? (
@@ -85,9 +91,11 @@ export default async function Page() {
             </span>
           ) : null}
         </div>
+
+        <div className="text-sm text-neutral-600">{headline}</div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-3 gap-6">
         {modules.map((m) => (
           <LockedCard
             key={m.href}
@@ -101,12 +109,14 @@ export default async function Page() {
         ))}
       </div>
 
-      <div className="rounded-xl border p-5 space-y-2">
-        <div className="font-semibold">What Vireoka protects (always)</div>
-        <ul className="mt-2 text-sm text-neutral-700 list-disc pl-5 space-y-1">
-          <li>Internal engine naming and proprietary multi-agent council weighting.</li>
-          <li>Raw heuristics, training corpus, source code, and internal scoring mechanisms.</li>
-          <li>Anything not required to establish diligence confidence at your tier.</li>
+      <div className="rounded-xl border p-6 space-y-3">
+        <div className="font-semibold text-lg">What makes Vireoka different</div>
+        <ul className="list-disc pl-5 text-sm text-neutral-700 space-y-1">
+          <li>AI agents operate as governed digital employees, not disconnected scripts.</li>
+          <li>Composable architecture: add agents by function (infra, design, code, web, growth) without monolith lock-in.</li>
+          <li>Event-driven orchestration so agents react in real time, safely.</li>
+          <li>Scoped autonomy levels: observe vs execute, with human approval gates where required.</li>
+          <li>Auditability-first: actions, decisions, and evidence trails are traceable.</li>
         </ul>
       </div>
     </main>

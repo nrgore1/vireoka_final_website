@@ -11,10 +11,7 @@ function NavLink(props: { href: string; label: string; locked?: boolean }) {
   const { href, label, locked } = props;
   return (
     <a
-      className={
-        "hover:underline " +
-        (locked ? "text-neutral-400" : "text-neutral-900")
-      }
+      className={"hover:underline " + (locked ? "text-neutral-400" : "text-neutral-900")}
       href={href}
       title={locked ? "Locked for your tier" : undefined}
     >
@@ -25,8 +22,6 @@ function NavLink(props: { href: string; label: string; locked?: boolean }) {
 
 export default async function PortalLayout({ children }: { children: ReactNode }) {
   const sb = await supabaseServerClient();
-
-  // Redirects safely (login / pending / expired). Never throws into a Digest page.
   await guardInvestorPortal(sb as any);
 
   const ctx = await getInvestorContext(sb as any);
@@ -36,19 +31,19 @@ export default async function PortalLayout({ children }: { children: ReactNode }
   const canIntelligence = ctx.tierRank >= requiredRankForFeature("intelligence");
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       <header className="border-b bg-white">
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-          <a href="/portal/overview" className="font-semibold whitespace-nowrap">
-            Vireoka Investor Portal
+          <a href="/portal/overview" className="font-semibold whitespace-nowrap text-lg">
+            Vireoka Intelligence
           </a>
 
           <nav className="w-full md:w-auto flex flex-wrap gap-x-4 gap-y-2 text-sm md:justify-end">
             <NavLink href="/portal/overview" label="Overview" />
-            <NavLink href="/portal/intelligence" label="Intelligence" locked={!canIntelligence} />
+            <NavLink href="/portal/intelligence" label="AI Intelligence" locked={!canIntelligence} />
             <NavLink href="/portal/vdr" label="Data Room" />
             <NavLink href="/portal/scenarios" label="Scenarios" locked={!canScenarios} />
-            <NavLink href="/portal/cap-table" label="Cap Table" locked={!canCapTable} />
+            <NavLink href="/portal/cap-table" label="Capital Modeling" locked={!canCapTable} />
             <NavLink href="/portal/activity" label="Activity" />
           </nav>
         </div>
@@ -69,13 +64,11 @@ export default async function PortalLayout({ children }: { children: ReactNode }
                 </span>
               </span>
               <span className="text-neutral-500">
-                All activity is logged. Materials are confidential and watermarked.
+                Controlled environment. Activity logged. Materials confidential.
               </span>
             </div>
 
-            {ctx.isAdmin ? (
-              <PreviewTierControl initial={ctx.previewTier || ""} />
-            ) : null}
+            {ctx.isAdmin ? <PreviewTierControl initial={ctx.previewTier || ""} /> : null}
           </div>
         </div>
       </header>

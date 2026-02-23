@@ -89,7 +89,7 @@ export default function HomePage() {
             className="text-sm text-vireoka-teal
                        underline underline-offset-4"
           >
-            Investor access →
+            Vireoka Intelligence →
           </Link>
         </div>
       </section>

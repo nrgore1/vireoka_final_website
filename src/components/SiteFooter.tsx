@@ -15,13 +15,22 @@ export function SiteFooter() {
           <div className="text-sm" style={{ color: "var(--vk-muted)" }}>
             {site.footer.copyright}
           </div>
+
           <div className="flex items-center gap-4 text-sm">
-            <a className="vk-link" href="/whitepapers">Whitepapers</a>
-            <a className="vk-link" href="/trust">Trust Center</a>
-            <a className="vk-link" href="/investors">Investors</a>
+            <a className="vk-link" href="/whitepapers">
+              Whitepapers
+            </a>
+            <a className="vk-link" href="/trust">
+              Trust Center
+            </a>
+            <a className="vk-link" href="/investors">
+              Vireoka Intelligence
+            </a>
           </div>
         </div>
       </div>
     </footer>
   );
 }
+
+export default SiteFooter;

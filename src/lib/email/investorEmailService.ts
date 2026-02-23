@@ -16,7 +16,7 @@ export async function sendInvestorRequestConfirmation(opts: {
 }) {
   const subject =
     opts.kind === "REQUEST_ACCESS"
-      ? "Vireoka — Investor access request received"
+      ? "Vireoka — Strategic Access request received"
       : "Vireoka — Investor application received";
 
   const html = `
@@ -88,7 +88,7 @@ export async function sendNdaInviteEmail(opts: { to: string; ndaUrl: string }) {
 }
 
 export async function sendInvestorApprovalEmail(opts: { to: string; verifyUrl: string }) {
-  const subject = "Vireoka — Investor access approved";
+  const subject = "Vireoka — Strategic Access approved";
   const html = `
     <div style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5">
       <h2 style="margin:0 0 10px 0">Your investor access is approved</h2>

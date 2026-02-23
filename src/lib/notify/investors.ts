@@ -11,7 +11,7 @@ export async function notifyInvestorRequestReceived(email: string) {
 
   await sendEmail({
     to: email,
-    subject: "Vireoka — Investor access request received",
+    subject: "Vireoka — Strategic Access request received",
     html,
   });
 }
