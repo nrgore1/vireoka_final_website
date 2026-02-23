@@ -21,7 +21,7 @@ export default function Page(props: any) {
       <p className="text-neutral-700">{message}</p>
 
       <div className="flex gap-3">
-        <a className="underline" href="/investors/status">Check status</a>
+        <a className="underline" href="/intelligence/status">Check status</a>
         <a className="underline" href="/">Back to site</a>
       </div>
 

@@ -8,7 +8,7 @@ export const siteCopy = {
     { href: "/", label: "Home" },
     { href: "/about", label: "About" },
     { href: "/resources", label: "Resources" },
-    { href: "/investors", label: "Investors" },
+    { href: "/intelligence", label: "Investors" },
   ],
 
   home: {
@@ -21,7 +21,7 @@ export const siteCopy = {
       "Ship faster with oversight that scales: councils, quorums, and confidence scoring.",
     ],
     ctaPrimary: { label: "Explore resources", href: "/resources" },
-    ctaSecondary: { label: "Vireoka Intelligence (NDA)", href: "/investors" },
+    ctaSecondary: { label: "Vireoka Intelligence (NDA)", href: "/intelligence" },
 
     sections: [
       {
@@ -91,9 +91,9 @@ export const siteCopy = {
       "Await approval (manual review)",
       "Access granted (time-bound)",
     ],
-    ctaApply: { label: "Apply", href: "/investors/apply" },
-    ctaStatus: { label: "Check status", href: "/investors/status" },
-    ctaPortal: { label: "Investor portal", href: "/investors/portal" },
+    ctaApply: { label: "Apply", href: "/intelligence/apply" },
+    ctaStatus: { label: "Check status", href: "/intelligence/status" },
+    ctaPortal: { label: "Investor portal", href: "/intelligence/portal" },
   },
 
   footer: {

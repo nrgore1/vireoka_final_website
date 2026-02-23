@@ -20,7 +20,7 @@ export default function AdminInvestorsLayout({ children }: { children: React.Rea
         </Link>
 
         <Link
-          href="/admin/investors"
+          href="/admin/intelligence"
           style={{
             padding: "8px 12px",
             borderRadius: 10,

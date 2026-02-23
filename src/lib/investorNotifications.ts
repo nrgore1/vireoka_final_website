@@ -4,7 +4,7 @@ export async function sendInvestorApprovedEmail(
   email: string,
   token: string
 ) {
-  const link = `${process.env.NEXT_PUBLIC_SITE_URL}/investors/accept?token=${token}`;
+  const link = `${process.env.NEXT_PUBLIC_SITE_URL}/intelligence/accept?token=${token}`;
 
   const html = `
 <p>Dear Investor,</p>

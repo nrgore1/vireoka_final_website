@@ -18,7 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           Investor Dashboard
         </Link>
 
-        <Link href="/admin/investors" style={linkStyle}>
+        <Link href="/admin/intelligence" style={linkStyle}>
           Investors
         </Link>
 

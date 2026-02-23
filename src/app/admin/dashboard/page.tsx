@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 async function fetchHeatmap() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/admin/investors/heatmap`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/admin/intelligence/heatmap`, {
     headers: {
       "x-admin-token": process.env.INVESTOR_ADMIN_TOKEN || "",
     },

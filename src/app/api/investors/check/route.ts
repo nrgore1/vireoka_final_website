@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getInvestorByEmail } from "@/lib/investors/service";
+import { getInvestorByEmail } from "@/lib/intelligence/service";
 
 export async function POST(req: Request) {
   const { email } = await req.json();

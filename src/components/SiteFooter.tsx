@@ -23,7 +23,7 @@ export function SiteFooter() {
             <a className="vk-link" href="/trust">
               Trust Center
             </a>
-            <a className="vk-link" href="/investors">
+            <a className="vk-link" href="/intelligence">
               Vireoka Intelligence
             </a>
           </div>

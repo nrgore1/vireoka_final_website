@@ -8,7 +8,7 @@ export default function AdminInvestorRequestsPage() {
 
   async function load() {
     setMsg("");
-    const res = await fetch("/api/admin/investors/requests/list");
+    const res = await fetch("/api/admin/intelligence/requests/list");
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {

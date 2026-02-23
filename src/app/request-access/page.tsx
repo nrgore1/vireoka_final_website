@@ -21,7 +21,7 @@ export default function RequestAccessPage() {
     setSuccessId(null);
 
     try {
-      const res = await fetch("/api/investors/request-access", {
+      const res = await fetch("/api/intelligence/request-access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

@@ -26,7 +26,7 @@ export const site: SiteInfo = {
     { label: "Leadership", href: "/leadership" },
     { label: "Resources", href: "/resources" },
     { label: "Trust", href: "/trust" },
-    { label: "Investors", href: "/investors" },
+    { label: "Investors", href: "/intelligence" },
   ],
 
   footer: {

@@ -24,6 +24,6 @@ export async function POST(req: Request) {
   else if (type === "follow_up") await emailFollowUp(email);
 
   return NextResponse.redirect(
-    new URL(`/admin/investors/${encodeURIComponent(email)}/timeline`, req.url)
+    new URL(`/admin/intelligence/${encodeURIComponent(email)}/timeline`, req.url)
   );
 }

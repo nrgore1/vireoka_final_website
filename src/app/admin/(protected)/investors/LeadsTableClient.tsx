@@ -38,7 +38,7 @@ export default function LeadsTableClient({ leads }: { leads: Lead[] }) {
     // optimistic UI
     setStatusMap((m) => ({ ...m, [id]: status }));
 
-    const res = await fetch("/api/admin/investors/status", {
+    const res = await fetch("/api/admin/intelligence/status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status }),
@@ -69,7 +69,7 @@ export default function LeadsTableClient({ leads }: { leads: Lead[] }) {
         </div>
 
         <a
-          href="/api/admin/investors/export"
+          href="/api/admin/intelligence/export"
           style={{ padding: "8px 12px", border: "1px solid #ccc", borderRadius: 10, textDecoration: "none" }}
         >
           Export CSV

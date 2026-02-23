@@ -68,7 +68,7 @@ export default function SiteHeader() {
         {/* Right-side actions */}
         <div className="flex items-center gap-2 shrink-0">
           <Link
-            href="/investors"
+            href="/intelligence"
             className="hidden sm:inline-flex vk-btn vk-btn-primary text-sm whitespace-nowrap"
           >
             Vireoka Intelligence
@@ -125,7 +125,7 @@ export default function SiteHeader() {
               })}
 
               <Link
-                href="/investors"
+                href="/intelligence"
                 className="px-4 py-3 rounded-xl text-sm no-underline"
                 style={{
                   color: "var(--vk-text)",

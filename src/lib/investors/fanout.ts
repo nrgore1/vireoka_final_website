@@ -1,6 +1,6 @@
-import { pushToAirtable } from "@/lib/investors/airtable";
-import { pushToHubSpotContact } from "@/lib/investors/hubspot";
-import { leadToHtml, sendInvestorEmail } from "@/lib/investors/email";
+import { pushToAirtable } from "@/lib/intelligence/airtable";
+import { pushToHubSpotContact } from "@/lib/intelligence/hubspot";
+import { leadToHtml, sendInvestorEmail } from "@/lib/intelligence/email";
 
 type LeadPayload = Record<string, any>;
 

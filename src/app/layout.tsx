@@ -84,7 +84,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               ))}
 
               <Link
-                href="/investors"
+                href="/intelligence"
                 className="rounded-md border border-vireoka-line px-3 py-1.5 text-sm
                            text-vireoka-indigo hover:bg-vireoka-ash whitespace-nowrap"
               >
@@ -127,7 +127,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 information is available through the NDA-gated investor portal.
               </p>
               <Link
-                href="/investors"
+                href="/intelligence"
                 className="inline-block mt-3 text-sm text-vireoka-teal
                            underline underline-offset-4"
               >

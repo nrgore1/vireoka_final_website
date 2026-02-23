@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 /**
  * Compatibility endpoint.
  * The UI posts to /api/investor-applications, but the existing working backend
- * likely lives at /api/investors/request-access.
+ * likely lives at /api/intelligence/request-access.
  *
  * This route forwards the request and maps field names safely.
  */
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
     // Forward to existing endpoint on the same host
     const url = new URL(req.url);
-    url.pathname = "/api/investors/request-access";
+    url.pathname = "/api/intelligence/request-access";
 
     const r = await fetch(url.toString(), {
       method: "POST",

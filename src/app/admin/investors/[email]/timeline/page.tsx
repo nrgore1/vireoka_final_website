@@ -56,7 +56,7 @@ const emailDecoded = decodeURIComponent(email);
               )}
 
               <form
-                action="/api/admin/investors/resend"
+                action="/api/admin/intelligence/resend"
                 method="POST"
                 className="pt-2"
               >

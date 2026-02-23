@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     type: "magiclink",
     email,
     options: {
-      redirectTo: "https://vireoka.com/investors",
+      redirectTo: "https://vireoka.com/intelligence",
     },
   });
 

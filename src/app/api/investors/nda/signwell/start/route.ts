@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     }
 
     const base = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || getBaseUrl(req);
-    const redirectUrl = `${base}/investors/nda-signed?token=${encodeURIComponent(token)}`;
+    const redirectUrl = `${base}/intelligence/nda-signed?token=${encodeURIComponent(token)}`;
 
     const { iframeUrl, documentId, raw } = await signwellCreateDocumentFromTemplate({
       signerName,

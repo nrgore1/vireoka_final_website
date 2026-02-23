@@ -55,7 +55,7 @@ export async function sendInternalNewLeadNotification(opts: {
     return { ok: false as const, error: "Missing INVESTOR_NOTIFY_EMAIL" };
   }
 
-  const adminUrl = `${baseUrl()}/admin/investors`;
+  const adminUrl = `${baseUrl()}/admin/intelligence`;
   const subject = `New Investor Lead — ${opts.kind} — ${opts.fullName}`;
 
   const html = `

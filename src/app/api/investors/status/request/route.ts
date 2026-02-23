@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     }
 
     const origin = process.env.APP_ORIGIN || originFromReq(req);
-    const statusUrl = `${origin}/investors/status/view?token=${encodeURIComponent(rawToken)}`;
+    const statusUrl = `${origin}/intelligence/status/view?token=${encodeURIComponent(rawToken)}`;
 
     try {
       await sendInvestorStatusLinkEmail({

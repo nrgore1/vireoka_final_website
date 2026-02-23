@@ -20,7 +20,7 @@ export default function AdminInvestorEventsClient() {
   async function load() {
     setMsg(null);
     const qs = email.trim() ? `?email=${encodeURIComponent(email.trim())}` : "";
-    const res = await fetch(`/api/admin/investors/events${qs}`, { credentials: "include" }).catch(() => null);
+    const res = await fetch(`/api/admin/intelligence/events${qs}`, { credentials: "include" }).catch(() => null);
     if (!res) return setMsg("Network error.");
     const data = await res.json().catch(() => null);
     if (!data?.ok) return setMsg("Unauthorized or error.");

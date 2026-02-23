@@ -7,7 +7,7 @@ export default function AdminInvestorTimeline({ email }: { email: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/investors/events", {
+    fetch("/api/admin/intelligence/events", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email }),

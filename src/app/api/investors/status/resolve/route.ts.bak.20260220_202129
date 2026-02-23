@@ -71,8 +71,8 @@ export async function POST(req: NextRequest) {
         message:
           "This NDA link has already been used. If you’ve already signed, you can continue to Investor Access. If you still need a fresh link, request a new NDA email.",
         ctas: {
-          primary: { label: "Continue to Investor Access", href: "/investors/access" },
-          secondary: { label: "Request a new NDA link", href: "/investors/status" },
+          primary: { label: "Continue to Investor Access", href: "/intelligence/access" },
+          secondary: { label: "Request a new NDA link", href: "/intelligence/status" },
         },
       });
     }
@@ -86,8 +86,8 @@ export async function POST(req: NextRequest) {
       title: "NDA link verified",
       message: "Your NDA link is valid. Please proceed to review and sign the NDA.",
       ctas: {
-        primary: { label: "Continue to NDA", href: `/investors/nda?token=${encodeURIComponent(token)}` },
-        secondary: { label: "Back", href: "/investors" },
+        primary: { label: "Continue to NDA", href: `/intelligence/nda?token=${encodeURIComponent(token)}` },
+        secondary: { label: "Back", href: "/intelligence" },
       },
     });
   } catch (e: any) {

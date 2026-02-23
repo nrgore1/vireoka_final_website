@@ -18,7 +18,7 @@ export default function PublicSafe() {
           and defended — not just optimized — you are in the right place.
         </p>
 
-        <Link href="/investors" className="text-sm underline">
+        <Link href="/intelligence" className="text-sm underline">
           Vireoka Intelligence →
         </Link>
       </div>

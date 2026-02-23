@@ -109,7 +109,7 @@ export async function POST(req: Request) {
 
   if (!userId) {
     const origin = process.env.APP_ORIGIN || getOriginFromReq(req);
-    const redirectTo = `${origin}/investors/portal`;
+    const redirectTo = `${origin}/intelligence/portal`;
 
     const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
       String(app.email).toLowerCase(),
@@ -171,7 +171,7 @@ export async function POST(req: Request) {
 
   // 4) Email NDA link (your email service)
   const origin = process.env.APP_ORIGIN || getOriginFromReq(req);
-  const ndaUrl = `${origin}/investors/nda?token=${rawToken}`;
+  const ndaUrl = `${origin}/intelligence/nda?token=${rawToken}`;
 
   await sendApprovalEmail({
     email: String(app.email).toLowerCase(),

@@ -71,5 +71,5 @@ export async function POST(req: Request) {
   });
 
   // Redirect to a nice confirmation page (optional)
-  return NextResponse.redirect(new URL('/investors/nda-signed', req.url), { status: 303 });
+  return NextResponse.redirect(new URL('/intelligence/nda-signed', req.url), { status: 303 });
 }

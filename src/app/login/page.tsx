@@ -11,7 +11,7 @@ export default function LoginPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
-    window.location.href = "/investors";
+    window.location.href = "/intelligence";
   }
 
   return (

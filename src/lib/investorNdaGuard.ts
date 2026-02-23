@@ -10,6 +10,6 @@ export async function requireNdaAcceptance(email: string) {
     .single();
 
   if (!data?.nda_accepted_at) {
-    redirect("/investors/nda");
+    redirect("/intelligence/nda");
   }
 }

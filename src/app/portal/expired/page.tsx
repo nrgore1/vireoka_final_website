@@ -10,7 +10,7 @@ export default function Page() {
 
       <div className="flex gap-3">
         <a className="underline" href="/portal/request-extension">Request extension</a>
-        <a className="underline" href="/investors/status">Check status</a>
+        <a className="underline" href="/intelligence/status">Check status</a>
       </div>
 
       <p className="text-xs text-neutral-500">

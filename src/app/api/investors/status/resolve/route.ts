@@ -36,7 +36,7 @@ function statusMessage(app: any, investor: any) {
       message:
         "We’ve requested additional information to complete your review. Please check your inbox for our questions and reply directly to that email.",
       ctas: {
-        primary: { label: "Check status page", href: "/investors/status" },
+        primary: { label: "Check status page", href: "/intelligence/status" },
         secondary: { label: "Contact support", href: "mailto:info@vireoka.com" },
       },
     };
@@ -49,7 +49,7 @@ function statusMessage(app: any, investor: any) {
         message:
           "Your request has been approved. We’ve sent you an email with your NDA link. Please review and accept the NDA to unlock investor portal access.",
         ctas: {
-          primary: { label: "Request a fresh NDA email", href: "/investors/status" },
+          primary: { label: "Request a fresh NDA email", href: "/intelligence/status" },
           secondary: { label: "Contact support", href: "mailto:info@vireoka.com" },
         },
       };
@@ -59,7 +59,7 @@ function statusMessage(app: any, investor: any) {
       title: "Access active ✅",
       message: "Your NDA is complete and your investor access is active. You can proceed to the investor portal.",
       ctas: {
-        primary: { label: "Open Investor Portal", href: "/investors/access" },
+        primary: { label: "Open Investor Portal", href: "/intelligence/access" },
         secondary: { label: "Back to site", href: "/" },
       },
     };
@@ -105,7 +105,7 @@ async function resolveToken(req: NextRequest) {
         title: "Missing link token",
         message: "This link is missing required information. Please request a new status link.",
         ctas: {
-          primary: { label: "Request a new status link", href: "/investors/status" },
+          primary: { label: "Request a new status link", href: "/intelligence/status" },
           secondary: { label: "Back to site", href: "/" },
         },
       },
@@ -132,7 +132,7 @@ async function resolveToken(req: NextRequest) {
         title: "This link doesn’t look valid",
         message: "It may be incomplete or already replaced. Request a new status link to continue.",
         ctas: {
-          primary: { label: "Request a new status link", href: "/investors/status" },
+          primary: { label: "Request a new status link", href: "/intelligence/status" },
           secondary: { label: "Back to site", href: "/" },
         },
       },
@@ -150,7 +150,7 @@ async function resolveToken(req: NextRequest) {
         title: "This status link has expired",
         message: "For security, status links expire after a limited time. Request a new link and we’ll email it to you.",
         ctas: {
-          primary: { label: "Request a new status link", href: "/investors/status" },
+          primary: { label: "Request a new status link", href: "/intelligence/status" },
           secondary: { label: "Back to site", href: "/" },
         },
       },

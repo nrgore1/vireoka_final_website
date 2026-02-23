@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { verifyInvestorSession } from "@/lib/investorSession";
-import { requireNdaAccepted } from "@/lib/supabase/investors";
+import { requireNdaAccepted } from "@/lib/supabase/intelligence";
 
 export async function requireInvestorAccess() {
   const session = await verifyInvestorSession();
-  if (!session?.email) redirect("/investors");
+  if (!session?.email) redirect("/intelligence");
 
   const ndaOk = await requireNdaAccepted(session.email);
-  if (!ndaOk) redirect("/investors/nda");
+  if (!ndaOk) redirect("/intelligence/nda");
 
   return session;
 }

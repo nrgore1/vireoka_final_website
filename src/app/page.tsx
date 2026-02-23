@@ -85,7 +85,7 @@ export default function HomePage() {
 
         <div>
           <Link
-            href="/investors"
+            href="/intelligence"
             className="text-sm text-vireoka-teal
                        underline underline-offset-4"
           >

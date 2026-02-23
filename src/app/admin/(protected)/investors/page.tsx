@@ -36,11 +36,11 @@ export default async function AdminInvestorsPage() {
   });
 
   const { data: auth } = await supabase.auth.getUser();
-  if (!auth?.user) redirect("/admin/login?next=/admin/investors");
+  if (!auth?.user) redirect("/admin/login?next=/admin/intelligence");
 
   const origin = getOrigin(hdrs);
 
-  const res = await fetch(`${origin}/api/admin/investors`, {
+  const res = await fetch(`${origin}/api/admin/intelligence`, {
     cache: "no-store",
     headers: {
       cookie: cookieStore

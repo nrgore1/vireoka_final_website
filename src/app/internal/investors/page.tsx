@@ -24,7 +24,7 @@ export default function InternalInvestorsAdminPage() {
 
   async function load() {
     setMsg(null);
-    const res = await fetch("/api/admin/investors", {
+    const res = await fetch("/api/admin/intelligence", {
       headers: { "x-admin-token": token },
       cache: "no-store",
     }).catch(() => null);
@@ -39,7 +39,7 @@ export default function InternalInvestorsAdminPage() {
     const body: any = { action: kind, email };
     if (kind === "approve") body.ttlDays = ttlDays;
 
-    const res = await fetch("/api/admin/investors", {
+    const res = await fetch("/api/admin/intelligence", {
       method: "POST",
       headers: { "content-type": "application/json", "x-admin-token": token },
       body: JSON.stringify(body),

@@ -5,7 +5,7 @@ export default function AdminInvestorDashboardLayout({ children }: { children: R
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
         <Link
-          href="/admin/investors"
+          href="/admin/intelligence"
           style={{
             padding: "8px 12px",
             borderRadius: 10,

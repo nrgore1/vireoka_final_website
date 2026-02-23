@@ -51,7 +51,7 @@ Log in: ${args.siteUrl}/login
 /* ---------------- APPROVED ---------------- */
 
 export function approvedTemplate(args: TemplateArgs) {
-  const deckUrl = trackLink(`/api/investors/deck?commId=${args.commId}`, args);
+  const deckUrl = trackLink(`/api/intelligence/deck?commId=${args.commId}`, args);
 
   const html = `
   <div style="font-family:system-ui;max-width:560px;margin:auto;">
@@ -64,7 +64,7 @@ export function approvedTemplate(args: TemplateArgs) {
   const text = `Your investor access is approved.
 
 Download investor deck:
-${args.siteUrl}/api/investors/deck?commId=${args.commId}
+${args.siteUrl}/api/intelligence/deck?commId=${args.commId}
 `;
 
   return {

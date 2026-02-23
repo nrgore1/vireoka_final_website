@@ -152,8 +152,8 @@ export async function POST(req: NextRequest) {
       "7d"
     );
 
-    const respondUrl = `${origin}/investors/respond?token=${encodeURIComponent(jwt)}`;
-    const statusUrl = `${origin}/investors/status`;
+    const respondUrl = `${origin}/intelligence/respond?token=${encodeURIComponent(jwt)}`;
+    const statusUrl = `${origin}/intelligence/status`;
 
     await sendRequestInfoEmail({
       email,
@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
         templateId,
         signerEmail: email,
         signerName: app.investor_name || email,
-        redirectUrl: `${origin}/investors/nda-signed`,
+        redirectUrl: `${origin}/intelligence/nda-signed`,
         metadata: { application_id: id, email },
       });
 
@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
 
   if (ndaErr) return NextResponse.json({ ok: false, error: ndaErr.message }, { status: 500 });
 
-  const ndaUrl = `${origin}/investors/nda?token=${encodeURIComponent(rawToken)}`;
+  const ndaUrl = `${origin}/intelligence/nda?token=${encodeURIComponent(rawToken)}`;
   await sendApprovalEmail({ email, ndaUrl, expiresHours: TTL_HOURS, name: app.investor_name ?? null });
 
   await audit("nda_link_sent", { expires_at: expiresAt });

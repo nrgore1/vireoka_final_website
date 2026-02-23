@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     }
 
     const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
-    const verifyUrl = `${baseUrl}/investors/verify?token=${encodeURIComponent(token)}`;
+    const verifyUrl = `${baseUrl}/intelligence/verify?token=${encodeURIComponent(token)}`;
 
     const emailRes = await sendInvestorApprovalEmail({ to: email, verifyUrl });
 

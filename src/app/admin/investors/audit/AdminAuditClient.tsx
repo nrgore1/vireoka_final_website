@@ -16,7 +16,7 @@ export default function AdminAuditClient() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/investors/audit", { credentials: "include" })
+    fetch("/api/admin/intelligence/audit", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setRows(d.rows ?? []))
       .finally(() => setLoading(false));

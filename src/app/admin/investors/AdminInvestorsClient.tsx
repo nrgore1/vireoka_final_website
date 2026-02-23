@@ -24,7 +24,7 @@ export default function AdminInvestorsClient() {
     setLoading(true);
     setMsg(null);
     try {
-      const res = await fetch("/api/admin/investors", { credentials: "include" });
+      const res = await fetch("/api/admin/intelligence", { credentials: "include" });
       const data = await res.json();
       if (!data?.ok) throw new Error("Unauthorized");
       setRows(data.investors || []);
@@ -36,7 +36,7 @@ export default function AdminInvestorsClient() {
   }
 
   async function approve(email: string) {
-    await fetch("/api/admin/investors", {
+    await fetch("/api/admin/intelligence", {
       method: "POST",
       credentials: "include",
       headers: { "content-type": "application/json" },
@@ -47,7 +47,7 @@ export default function AdminInvestorsClient() {
 
   async function revoke(email: string) {
     const reason = prompt("Reason for revoke (optional):") || undefined;
-    await fetch("/api/admin/investors", {
+    await fetch("/api/admin/intelligence", {
       method: "PATCH",
       credentials: "include",
       headers: { "content-type": "application/json" },
@@ -57,7 +57,7 @@ export default function AdminInvestorsClient() {
   }
 
   async function restore(email: string) {
-    await fetch("/api/admin/investors", {
+    await fetch("/api/admin/intelligence", {
       method: "PUT",
       credentials: "include",
       headers: { "content-type": "application/json" },
@@ -68,7 +68,7 @@ export default function AdminInvestorsClient() {
 
   async function softDelete(email: string) {
     if (!confirm(`Soft-delete ${email}? This revokes access and hides from default views.`)) return;
-    await fetch("/api/admin/investors", {
+    await fetch("/api/admin/intelligence", {
       method: "DELETE",
       credentials: "include",
       headers: { "content-type": "application/json" },
@@ -124,7 +124,7 @@ export default function AdminInvestorsClient() {
           />
         </label>
 
-        <a className="text-sm underline underline-offset-4" href="/admin/investors/audit">
+        <a className="text-sm underline underline-offset-4" href="/admin/intelligence/audit">
           View audit log →
         </a>
 
