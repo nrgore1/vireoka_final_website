@@ -1,96 +1,54 @@
-import SubmitButton from './SubmitButton';
-import { submitInvestorApplication } from './actions';
+import { CONTACT_EMAIL, CONTACT_MAILTO } from "@/lib/contact";
 
-export const dynamic = 'force-dynamic';
+export const metadata = {
+  title: "Vireoka Intelligence — Apply / Contact",
+  description: "Request access or propose collaboration inside Vireoka Intelligence.",
+};
 
-const INVESTOR_TYPES = [
-  { value: 'Advisors', label: 'Advisor (Time Investor)' },
-  { value: 'Contractors', label: 'Contractor (Technical Contributor)' },
-  { value: 'Crowdsourcing', label: 'Crowdsourcing Investor' },
-  { value: 'Angel', label: 'Angel Investor ($25k–$250k)' },
-  { value: 'VC', label: 'Venture Capital (Tier-1 Lead)' },
-  { value: 'Family Office', label: 'Family Office' },
-  { value: 'Corporate', label: 'Corporate / Strategic' },
-];
-
-const CHECK_SIZES = [
-  'Time-only / Advisory',
-  '$5k–$25k',
-  '$25k–$250k',
-  '$250k–$1M',
-  '$1M+',
-  'Strategic / Non-financial',
-];
-
-const HORIZONS = ['0–3 months', '3–6 months', '6–12 months', '12+ months'];
-
-export default function InvestorApplyPage() {
-  async function action(formData: FormData) {
-    'use server';
-    try {
-      await submitInvestorApplication(formData);
-    } catch (e: any) {
-      // Re-throw so Next shows it via error boundary / formState; page will show message below
-      throw e;
-    }
-  }
-
+export default function ApplyPage() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="text-3xl font-semibold mb-4">Investor Access Application</h1>
+    <main className="mx-auto max-w-3xl px-6 py-12">
+      <header>
+        <a className="text-sm font-semibold text-neutral-700 hover:underline" href="/intelligence">
+          ← Back to Intelligence
+        </a>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-neutral-900">
+          Apply / Contact
+        </h1>
+        <p className="mt-4 text-base leading-7 text-neutral-700">
+          Tell us who you are, what role fits you best, and what you want to contribute or evaluate.
+          We’ll respond with the right next steps (and NDA when appropriate).
+        </p>
+      </header>
 
-      <p className="text-gray-600 mb-8">
-        Vireoka uses time-bound, tiered access and audit logging. Submit your information to request access to NDA-gated materials.
-      </p>
+      <section className="mt-10 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-neutral-900">What to include</h2>
+        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-neutral-700">
+          <li>Your intended role: Advisor / Angel / Contributor / Partner</li>
+          <li>Your background and domain focus</li>
+          <li>What you want to validate or help shape</li>
+          <li>Any constraints (timing, confidentiality, conflict considerations)</li>
+        </ul>
 
-      {/* Next will display the thrown server action error as a runtime error unless we catch it with an error boundary.
-          So we keep the action simple and rely on server logs + quick schema check below. */}
-      <form action={action} className="space-y-6">
-        <input name="investor_name" required placeholder="Full name" className="input" />
-        <input name="email" type="email" required placeholder="Email address" className="input" />
-        <input name="organization" required placeholder="Organization / Firm" className="input" />
-        <input name="role" required placeholder="Role / Title" className="input" />
+        <div className="mt-6 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+          <div className="text-sm font-semibold text-neutral-900">Email</div>
+          <p className="mt-1 text-sm text-neutral-700">
+            Send your note to{" "}
+            <a className="font-semibold underline" href={CONTACT_MAILTO}>
+              {CONTACT_EMAIL}
+            </a>
+          </p>
+          <p className="mt-2 text-xs text-neutral-600">
+            If you’re requesting NDA materials, mention it explicitly so we can route you correctly.
+          </p>
+        </div>
+      </section>
 
-        <select name="investor_type" required className="input">
-          <option value="">Investor type</option>
-          {INVESTOR_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-
-        <select name="check_size" required className="input">
-          <option value="">Skin in the game (check size / contribution)</option>
-          {CHECK_SIZES.map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-
-        <select name="horizon" required className="input">
-          <option value="">Timeline (when do you need diligence?)</option>
-          {HORIZONS.map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-
-        <textarea
-          name="intent"
-          rows={5}
-          placeholder="What are you looking to evaluate? (e.g., governance moat, GTM, financial model, integration fit)"
-          className="input"
-        />
-
-        <SubmitButton />
-      </form>
-
-      <p className="mt-6 text-xs text-neutral-500">
-        If submission fails, check server logs for the Supabase error message (missing table/column is the most common cause).
-      </p>
+      <section className="mt-8">
+        <a className="text-sm font-semibold text-neutral-700 hover:underline" href="/intelligence/access">
+          Learn about access tiers →
+        </a>
+      </section>
     </main>
   );
 }
