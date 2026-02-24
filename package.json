@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "NEXT_PRIVATE_MAX_WORKERS=1 next build --webpack",
+     "build": "next build",
     "start": "next start",
     "lint": "eslint ."
   },
