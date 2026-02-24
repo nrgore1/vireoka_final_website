@@ -25,7 +25,7 @@ export async function middleware(req: NextRequest) {
     });
   } catch {
     const dest = req.nextUrl.clone();
-    dest.pathname = "/investors/status";
+    dest.pathname = "/intelligence/status";
     return NextResponse.redirect(dest);
   }
 
@@ -34,7 +34,7 @@ export async function middleware(req: NextRequest) {
   // if not logged in -> send to investor entry
   if (!res.ok || !data?.ok) {
     const dest = req.nextUrl.clone();
-    dest.pathname = "/investors";
+    dest.pathname = "/intelligence";
     return NextResponse.redirect(dest);
   }
 
@@ -45,7 +45,7 @@ export async function middleware(req: NextRequest) {
       data.reason === "expired" ? "/portal/expired" :
       data.reason === "nda_required" ? "/portal/pending?step=nda" :
       data.reason === "grant_required" ? "/portal/pending?step=activation" :
-      "/investors/status";
+      "/intelligence/status";
     return NextResponse.redirect(dest);
   }
 

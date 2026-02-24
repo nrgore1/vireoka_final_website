@@ -17,7 +17,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing email or reference_code' }), { status: 400 });
     }
 
-    const ndaUrl = `${APP_ORIGIN}/investors/nda?ref=${encodeURIComponent(reference_code)}`;
+    const ndaUrl = `${APP_ORIGIN}/intelligence/nda?ref=${encodeURIComponent(reference_code)}`;
 
     await resend.emails.send({
       from: FROM_EMAIL,
