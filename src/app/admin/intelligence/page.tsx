@@ -1,18 +1,24 @@
 import Link from "next/link";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { InvestorLeadsAdminTable } from "@/components/admin/InvestorLeadsAdminTable";
 
-async function fetchLeads() {
-  const res = await fetch("/api/admin/investor-leads", { cache: "no-store" }).catch(() => null);
-  if (!res) return { ok: false as const, leads: [], error: "fetch failed" };
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-  const data = await res.json().catch(() => null);
-  if (!res.ok || !data?.ok) return { ok: false as const, leads: [], error: data?.error || "unauthorized" };
+async function loadLeads() {
+  const supabase = supabaseAdmin();
+  const r = await supabase
+    .from("investor_leads")
+    .select("id, full_name, email, company, investor_type, reference_code, status")
+    .order("created_at", { ascending: false })
+    .limit(200);
 
-  return { ok: true as const, leads: data.leads || [], error: null };
+  if (r.error) return { ok: false as const, leads: [], error: r.error.message };
+  return { ok: true as const, leads: r.data || [], error: null };
 }
 
 export default async function AdminIntelligencePage() {
-  const r = await fetchLeads();
+  const r = await loadLeads();
 
   return (
     <main className="mx-auto max-w-6xl px-4 sm:px-6 py-10 sm:py-14">
