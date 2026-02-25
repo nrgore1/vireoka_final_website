@@ -1,38 +1,24 @@
-import { getNdaStatus } from "@/agents/nda/ndaAgent";
-import { getSessionUser } from "@/lib/auth/session";
-import { fetchExistingPortalAccessCheck } from "@/repo/accessRepo";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 /**
- * Central access decision used by /api/intelligence/access-check and protected pages.
- * Deny by default.
+ * Marks NDA accepted for approved investor.
+ * Keeps logic separate from route.
  */
-export async function accessCheck(): Promise<{
-  ok: boolean;
-  state:
-    | "logged_out"
-    | "nda_missing"
-    | "terms_missing"
-    | "role_denied"
-    | "allowed";
-  role?: string | null;
-}> {
-  const user = await getSessionUser();
-  if (!user) return { ok: false, state: "logged_out", role: null };
+export async function markNdaAccepted(email: string) {
+  const supabase = supabaseAdmin();
 
-  // NDA gate
-  const nda = await getNdaStatus();
-  if (nda.status !== "accepted") return { ok: false, state: "nda_missing", role: null };
+  const { error } = await supabase
+    .from("investor_leads")
+    .update({
+      nda_accepted: true,
+      nda_accepted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("email", email);
 
-  // Existing repo function reads session/cookies internally (takes 0 args)
-  const access: any = await fetchExistingPortalAccessCheck();
+  if (error) {
+    throw new Error("Failed to mark NDA accepted");
+  }
 
-  // Be conservative about shape; support a few likely fields
-  const role = access?.role ?? access?.userRole ?? null;
-  const allowed = Boolean(access?.allowed ?? access?.ok ?? false);
-  const termsAccepted = Boolean(access?.termsAccepted ?? access?.hasAcceptedTerms ?? access?.terms ?? false);
-
-  if (!termsAccepted) return { ok: false, state: "terms_missing", role };
-  if (!allowed) return { ok: false, state: "role_denied", role };
-
-  return { ok: true, state: "allowed", role };
+  return { ok: true };
 }

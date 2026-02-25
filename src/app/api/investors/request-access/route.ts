@@ -1,212 +1,115 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { randomUUID } from "crypto";
-import {
-  sendInvestorRequestConfirmation,
-  sendInternalNewLeadNotification,
-} from "@/lib/email/investorEmailService";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-const ALLOWED_ROLES = new Set(["advisor", "angel", "crowd", "partner"]);
-
-function getIp(req: Request) {
-  const xf = req.headers.get("x-forwarded-for");
-  if (xf) return xf.split(",")[0].trim();
-  return req.headers.get("x-real-ip") || null;
-}
-
-function isMissingColumnError(errMsg: string) {
-  const msg = (errMsg || "").toLowerCase();
-  return msg.includes("schema cache") || msg.includes("could not find the") || msg.includes("column");
-}
-
-function isEmail(v: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-}
-
-function roleLabel(v: string) {
-  switch (v) {
-    case "advisor":
-      return "Advisor";
-    case "angel":
-      return "Angel Investor";
-    case "crowd":
-      return "Crowd Contributor";
-    case "partner":
-      return "Partner";
-    default:
-      return v;
-  }
-}
+const Schema = z.object({
+  fullName: z.string().min(2),
+  email: z.string().email(),
+  company: z.string().min(1),
+  role: z.enum(["advisor", "angel", "crowd", "partner", "vc"]),
+  message: z.string().optional(),
+});
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => null);
+    const parsed = Schema.safeParse(body);
 
-    const fullName = String(body.fullName || "").trim();
-    const email = String(body.email || "").trim();
-    const company = String(body.company || "").trim();
-    const role = String(body.role || "").trim();
-    const messageRaw = String(body.message || "").trim();
-
-    // Friendly validation
-    if (!fullName) {
-      return NextResponse.json(
-        { ok: false, code: "MISSING_NAME", message: "Please enter your full name." },
-        { status: 400 }
-      );
-    }
-    if (!email) {
-      return NextResponse.json(
-        { ok: false, code: "MISSING_EMAIL", message: "Please enter your email address." },
-        { status: 400 }
-      );
-    }
-    if (!isEmail(email)) {
-      return NextResponse.json(
-        { ok: false, code: "INVALID_EMAIL", message: "Please enter a valid email address." },
-        { status: 400 }
-      );
-    }
-    if (!company) {
+    if (!parsed.success) {
       return NextResponse.json(
         {
           ok: false,
-          code: "MISSING_COMPANY",
-          message: 'Please enter your company / affiliation (you can write "Individual" if applicable).',
-        },
-        { status: 400 }
-      );
-    }
-    if (!role || !ALLOWED_ROLES.has(role)) {
-      return NextResponse.json(
-        {
-          ok: false,
-          code: "MISSING_ROLE",
-          message: "Please choose the role you’re requesting access for.",
+          code: "INVALID_INPUT",
+          message: "Please check your details and try again.",
+          detail: parsed.error.issues.map((i) => i.message).join(" · "),
         },
         { status: 400 }
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!supabaseUrl || !serviceKey) {
+    const { fullName, email, company, role, message } = parsed.data;
+    const em = email.trim().toLowerCase();
+
+    const supabase = supabaseAdmin();
+
+    // If an existing lead exists for this email, return it (avoid duplicates)
+    const existing = await supabase
+      .from("investor_leads")
+      .select("id, reference_code, status, investor_type")
+      .eq("email", em)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing.data?.id) {
       return NextResponse.json(
         {
-          ok: false,
-          code: "SERVER_MISCONFIGURED",
-          message: "Server is missing required configuration. Please contact support.",
+          ok: true,
+          id: existing.data.id,
+          referenceCode: existing.data.reference_code,
+          status: existing.data.status,
+          role: existing.data.investor_type ?? role,
+          message:
+            "We already have a request on file for this email. If you need to update details, reply to the confirmation email or submit again with a different email.",
         },
-        { status: 500 }
+        { status: 200 }
       );
     }
 
-    const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    const referenceCode = randomUUID();
 
-    const id = randomUUID();
-    const referenceCode = randomUUID(); // MUST be present in every insert attempt
-    const ip = getIp(req);
-    const userAgent = req.headers.get("user-agent") || null;
+    // IMPORTANT:
+    // - kind must satisfy investor_leads_kind_check (typically APPLY/INVITE/etc.)
+    // - investor_type stores your role (advisor/angel/crowd/partner/vc)
+    const ins = await supabase
+      .from("investor_leads")
+      .insert({
+        kind: "APPLY",
+        full_name: fullName,
+        email: em,
+        company,
+        investor_type: role,
+        reference_code: referenceCode,
+        status: "NEW",
+        message: message || null,
+      })
+      .select("id, reference_code, status, investor_type")
+      .single();
 
-    const message = (messageRaw ? messageRaw : null) as string | null;
-
-    // Always include reference_code because DB requires it
-    const baseRow: any = {
-      id,
-      kind: "REQUEST_ACCESS",
-      status: "NEW",
-      reference_code: referenceCode,
-      full_name: fullName,
-      email,
-      company,
-      message,
-      ip,
-      user_agent: userAgent,
-    };
-
-    // Try storing role_interest if the column exists; otherwise fall back safely.
-    const extendedRow: any = {
-      ...baseRow,
-      role_interest: role,
-      environment: process.env.NODE_ENV === "production" ? "production" : "development",
-    };
-
-    let { error } = await supabase.from("investor_leads").insert(extendedRow);
-
-    if (error && isMissingColumnError(error.message)) {
-      // Fallback: store role inside message while STILL including reference_code
-      const roleLine = `[Requested role: ${roleLabel(role)}]`;
-      const patchedMessage = baseRow.message ? `${roleLine}\n${baseRow.message}` : roleLine;
-
-      ({ error } = await supabase
-        .from("investor_leads")
-        .insert({ ...baseRow, message: patchedMessage }));
-    }
-
-    if (error) {
+    if (ins.error) {
       return NextResponse.json(
         {
           ok: false,
           code: "LEAD_INSERT_FAILED",
-          message: "We couldn’t save your request. Please try again, or contact us if this persists.",
-          detail: error.message,
+          message:
+            "We couldn’t save your request. Please try again, or contact us if this persists.",
+          detail: String(ins.error.message || ins.error),
         },
         { status: 500 }
       );
     }
 
-    // Email fanout (best-effort; don't fail lead capture)
-    const roleLine = `Requested role: ${roleLabel(role)}`;
-    const msgForInternal = message ? `${roleLine}\n\n${message}` : roleLine;
-
-    const [investorRes, internalRes] = await Promise.all([
-      sendInvestorRequestConfirmation({
-        to: email,
-        fullName,
-        kind: "REQUEST_ACCESS",
-        referenceCode,
-      }),
-      sendInternalNewLeadNotification({
-        fullName,
-        email,
-        company,
-        message: msgForInternal,
-        kind: "REQUEST_ACCESS",
-        referenceCode,
-      }),
-    ]);
-
-    // Best-effort audit updates
-    const updatePatch: any = {};
-    if (investorRes.ok) updatePatch.investor_confirm_email_sent_at = new Date().toISOString();
-    else updatePatch.investor_confirm_email_error = investorRes.error;
-
-    if (internalRes.ok) updatePatch.internal_notify_email_sent_at = new Date().toISOString();
-    else updatePatch.internal_notify_email_error = internalRes.error;
-
-    if (Object.keys(updatePatch).length) {
-      await supabase.from("investor_leads").update(updatePatch).eq("id", id);
-    }
-
-    return NextResponse.json({
-      ok: true,
-      id,
-      referenceCode,
-      role,
-      fanout: {
-        investorEmail: investorRes,
-        internalEmail: internalRes,
+    return NextResponse.json(
+      {
+        ok: true,
+        id: ins.data.id,
+        referenceCode: ins.data.reference_code,
+        status: ins.data.status,
+        role: ins.data.investor_type,
       },
-    });
-  } catch (err: any) {
+      { status: 200 }
+    );
+  } catch (e: any) {
     return NextResponse.json(
       {
         ok: false,
         code: "SERVER_ERROR",
-        message: "Something went wrong on the server. Please try again.",
-        detail: String(err?.message || err),
+        message: "Something went wrong. Please try again.",
+        detail: String(e?.message || e),
       },
       { status: 500 }
     );

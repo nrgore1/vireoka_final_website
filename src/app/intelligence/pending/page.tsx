@@ -1,13 +1,26 @@
-export default function InvestorPendingPage() {
+import Link from "next/link";
+
+export default function PendingApprovalPage() {
   return (
-    <main style={{ padding: 48, maxWidth: 720 }}>
-      <h1>Request Under Review</h1>
-
-      <p>Thank you for your interest in <strong>Vireoka</strong>.</p>
-      <p>Your investor access request is currently under review.</p>
-      <p>If approved, you will receive an email with further instructions.</p>
-
-      <p style={{ marginTop: 24 }}>— <strong>The Vireoka Team</strong></p>
+    <main className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16">
+      <h1 className="text-3xl font-semibold tracking-tight text-vireoka-indigo">Request received</h1>
+      <p className="mt-3 text-neutral-700">
+        Your access request is under review. Once approved, you’ll be able to accept the NDA and access role-based materials.
+      </p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
+          href="/intelligence/login"
+          className="rounded-lg border border-vireoka-line bg-white px-4 py-2 text-sm font-semibold hover:bg-vireoka-ash"
+        >
+          Back to login
+        </Link>
+        <Link
+          href="/intelligence"
+          className="rounded-lg bg-vireoka-indigo px-4 py-2 text-sm font-semibold text-white hover:opacity-95"
+        >
+          Return to Intelligence
+        </Link>
+      </div>
     </main>
   );
 }
