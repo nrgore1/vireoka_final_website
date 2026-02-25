@@ -1,41 +1,69 @@
 import { cookies } from "next/headers";
 
-export const investorCookieName = "vireoka_investor";
+export const investorCookieName = "vireoka_investor_session";
+const COOKIE = investorCookieName;
 
-export type InvestorSess = {
-  email: string;
-  token: string;
-};
+/**
+ * Existing helpers (keep these stable)
+ */
+export async function clearInvestorSession() {
+  const c = await cookies();
+  c.set(COOKIE, "", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 0 });
+}
 
-export async function createInvestorSession(email: string, token: string) {
-  const cookieStore = await cookies();
-  const value = JSON.stringify({ email, token } satisfies InvestorSess);
-
-  cookieStore.set({
-    name: investorCookieName,
-    value,
+export async function setInvestorSession(payload: { email: string }) {
+  const c = await cookies();
+  c.set(COOKIE, payload.email.toLowerCase(), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
+    maxAge: 60 * 60 * 24 * 7,
   });
 }
 
-export async function verifyInvestorSession(): Promise<InvestorSess | null> {
-  const cookieStore = await cookies();
-  const c = cookieStore.get(investorCookieName);
-  if (!c) return null;
-
-  try {
-    const parsed = JSON.parse(c.value) as InvestorSess;
-    if (!parsed?.email || !parsed?.token) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+export async function getInvestorEmail(): Promise<string | null> {
+  const c = await cookies();
+  return c.get(COOKIE)?.value || null;
 }
 
-export async function clearInvestorSession() {
-  const cookieStore = await cookies();
-  cookieStore.delete(investorCookieName);
+/**
+ * Session getter used across routes
+ */
+export async function getInvestorSession(): Promise<
+  | { ok: true; email: string }
+  | { ok: false; error: "not_authenticated" }
+> {
+  const email = await getInvestorEmail();
+  if (!email) return { ok: false, error: "not_authenticated" };
+  return { ok: true, email };
+}
+
+/**
+ * ✅ Compatibility: older code imports createInvestorSession() with either:
+ *   - (payload: { email })
+ *   - (email: string, token?: string)
+ * Token is ignored here because session is stored as httpOnly cookie (email only).
+ */
+export async function createInvestorSession(
+  payloadOrEmail: { email: string } | string,
+  _token?: string
+): Promise<{ ok: true; email: string }> {
+  const email =
+    typeof payloadOrEmail === "string" ? payloadOrEmail : payloadOrEmail.email;
+
+  await setInvestorSession({ email });
+  return { ok: true, email: email.toLowerCase() };
+}
+
+/**
+ * ✅ Compatibility: older code imports verifyInvestorSession()
+ */
+export async function verifyInvestorSession(): Promise<{ email: string }> {
+  const session = await getInvestorSession();
+
+  if (!session.ok) {
+    throw new Error("Unauthorized: missing investor session");
+  }
+
+  return { email: session.email };
 }

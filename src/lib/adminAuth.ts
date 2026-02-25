@@ -25,3 +25,9 @@ export function requireAdmin(req: Request): { ok: true } | { ok: false; status: 
 
   return { ok: true };
 }
+
+/**
+ * ✅ Compatibility: older middleware imports requireAdminToken()
+ * Alias to requireAdmin() (preferred name).
+ */
+export const requireAdminToken = requireAdmin;

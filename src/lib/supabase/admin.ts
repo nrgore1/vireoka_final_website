@@ -1,61 +1,66 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+export const runtime = "nodejs";
 
-/**
- * Server-side Supabase admin client (service role).
- * Keep this file small + dependency-free so it can be used across route handlers.
- */
+import { createClient } from "@supabase/supabase-js";
 
-function mustGetEnv(name: string): string {
+function mustGetEnv(name: string) {
   const v = process.env[name];
-  if (!v) throw new Error(`Missing env var: ${name}`);
+  if (!v) throw new Error(`Missing env: ${name}`);
   return v;
 }
 
-export function createAdminClient(): SupabaseClient {
+/**
+ * Service-role Supabase client (server-only).
+ */
+export function createAdminClient() {
   const url = mustGetEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const serviceKey = mustGetEnv("SUPABASE_SERVICE_ROLE_KEY");
-  return createClient(url, serviceKey, {
+  const key = mustGetEnv("SUPABASE_SERVICE_ROLE_KEY");
+  return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
 
 /**
- * Back-compat alias: many modules import supabaseAdmin()
+ * Backward-compatible alias used across the codebase.
  */
-export function supabaseAdmin(): SupabaseClient {
+export function supabaseAdmin() {
   return createAdminClient();
 }
 
 /**
- * Admin token guard for API endpoints.
- * Uses env var ADMIN_TOKEN_VALUE and header:
- *   - x-admin-token: <token>
- *   - OR Authorization: Bearer <token>
+ * Admin API token: supports both:
+ *  - x-admin-token: <token>
+ *  - Authorization: Bearer <token>
+ *
+ * Expected token comes from one of:
+ *  - ADMIN_TOKEN_VALUE
+ *  - ADMIN_API_TOKEN
+ *  - ADMIN_API_BEARER_TOKEN
  */
 export function requireAdminToken(req: Request): boolean {
-  const expected = (process.env.ADMIN_TOKEN_VALUE || "").trim();
+  const expected =
+    process.env.ADMIN_TOKEN_VALUE ||
+    process.env.ADMIN_API_TOKEN ||
+    process.env.ADMIN_API_BEARER_TOKEN ||
+    "";
+
   if (!expected) return false;
 
-  const h = req.headers;
-  const fromHeader = (h.get("x-admin-token") || "").trim();
+  const hdr = req.headers;
+  const viaHeader = (hdr.get("x-admin-token") || "").trim();
 
-  const auth = (h.get("authorization") || "").trim();
-  const fromBearer =
-    auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  const auth = (hdr.get("authorization") || "").trim();
+  const viaBearer = auth.toLowerCase().startsWith("bearer ")
+    ? auth.slice(7).trim()
+    : "";
 
-  const tok = fromHeader || fromBearer;
-  if (!tok) return false;
-
-  return tok === expected;
+  const token = viaHeader || viaBearer;
+  return token.length > 0 && token === expected;
 }
 
-/**
- * Back-compat helper used by some endpoints.
- */
-export function requireAdminTokenOrThrow(req: Request): void {
+export function requireAdminTokenOrThrow(req: Request) {
   if (!requireAdminToken(req)) {
-    const err: any = new Error("unauthorized");
-    err.status = 401;
+    const err = new Error("unauthorized");
+    (err as any).status = 401;
     throw err;
   }
 }

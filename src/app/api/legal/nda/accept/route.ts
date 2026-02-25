@@ -1,64 +1,60 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { getInvestorSession } from "@/lib/investorSession";
-import { markNdaAccepted } from "@/agents/investor/investorManagerAgent";
+import { getSessionUser } from "@/lib/auth/session";
+import { CURRENT_NDA_VERSION } from "@/lib/nda";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
-    // 1️⃣ Require authenticated investor session
-    const session = await getInvestorSession();
-    if (!session?.email) {
-      return NextResponse.json(
-        { ok: false, error: "Not authenticated" },
-        { status: 401 }
-      );
+    const user = await getSessionUser();
+    if (!user?.email) {
+      return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
     }
 
-    const email = session.email.toLowerCase().trim();
-
+    const email = user.email.toLowerCase();
     const supabase = supabaseAdmin();
 
-    // 2️⃣ Fetch most recent investor_lead for this email
-    const { data, error } = await supabase
+    // ✅ must be APPROVED to proceed with NDA
+    const lead = await supabase
       .from("investor_leads")
       .select("status")
       .eq("email", email)
       .order("created_at", { ascending: false })
-      .limit(1);
+      .limit(1)
+      .maybeSingle();
 
-    if (error) {
-      return NextResponse.json(
-        { ok: false, error: "Unable to verify approval status" },
-        { status: 500 }
-      );
-    }
-
-    const status = (data?.[0]?.status || "").toUpperCase();
-
-    // 3️⃣ Enforce approval
+    const status = lead.data?.status || "NEW";
     if (status !== "APPROVED") {
       return NextResponse.json(
         {
           ok: false,
-          error:
+          code: "NOT_APPROVED",
+          message:
             status === "REVOKED"
-              ? "Access has been revoked."
-              : "Access not approved yet.",
+              ? "Your access was revoked. If you believe this is a mistake, please contact info@vireoka.com."
+              : "Your request is pending approval. Please wait for confirmation.",
+          status,
         },
         { status: 403 }
       );
     }
 
-    // 4️⃣ Mark NDA accepted in your agent logic
-    await markNdaAccepted(email);
+    // Record NDA acceptance (cookie-based NDA agent should set cookie; DB record is optional here)
+    // If you also store NDA acceptance in DB, do it here.
+    await supabase
+      .from("investor_leads")
+      .update({
+        nda_version_accepted: CURRENT_NDA_VERSION,
+        nda_accepted_at: new Date().toISOString(),
+      })
+      .eq("email", email);
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return NextResponse.json({ ok: true, ndaVersion: CURRENT_NDA_VERSION });
   } catch (e: any) {
     return NextResponse.json(
-      { ok: false, error: e?.message || "Server error" },
+      { ok: false, code: "SERVER_ERROR", message: "Something went wrong. Please try again.", detail: e?.message || null },
       { status: 500 }
     );
   }
