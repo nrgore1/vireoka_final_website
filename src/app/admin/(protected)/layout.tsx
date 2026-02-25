@@ -1,23 +1,14 @@
 import { redirect } from "next/navigation";
-import { supabaseServer } from "@/lib/supabase/server";
+import Link from "next/link";
+import { readAdminSession } from "@/lib/adminSession";
 
 export default async function AdminProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await supabaseServer();
-
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth?.user) redirect("/admin/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role,email")
-    .eq("id", auth.user.id)
-    .single();
-
-  if (!profile || profile.role !== "admin") redirect("/not-authorized");
+  const sess = await readAdminSession();
+  if (!sess?.email) redirect("/admin/login");
 
   return (
     <div style={{ padding: 24, fontFamily: "system-ui" }}>
@@ -29,13 +20,32 @@ export default async function AdminProtectedLayout({
           marginBottom: 16,
         }}
       >
-        <h1 style={{ margin: 0 }}>Admin</h1>
-        <form action="/admin/logout" method="post">
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <h1 style={{ margin: 0 }}>Admin</h1>
+          <span style={{ color: "#6b7280", fontSize: 12 }}>{sess.email}</span>
+
+          <Link
+            href="/admin/intelligence"
+            style={{ fontSize: 12, color: "#111827", textDecoration: "underline" }}
+          >
+            Intelligence
+          </Link>
+
+          <Link
+            href="/admin/investor-leads"
+            style={{ fontSize: 12, color: "#111827", textDecoration: "underline" }}
+          >
+            Leads
+          </Link>
+        </div>
+
+        <form action="/api/admin/logout" method="post">
           <button style={{ padding: "8px 12px", cursor: "pointer" }}>
             Sign out
           </button>
         </form>
       </div>
+
       {children}
     </div>
   );

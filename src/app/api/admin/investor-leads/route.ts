@@ -2,13 +2,15 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { supabaseAdmin, requireAdminTokenOrThrow } from "@/lib/supabase/admin";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireAdminOrThrow } from "@/lib/adminGuard";
 
 export async function GET(req: Request) {
   try {
-    requireAdminTokenOrThrow(req);
-    const supabase = supabaseAdmin();
+    // ✅ allow admin cookie OR token (via lib/adminGuard)
+    await requireAdminOrThrow(req);
 
+    const supabase = supabaseAdmin();
     const r = await supabase
       .from("investor_leads")
       .select("id, full_name, email, company, investor_type, kind, reference_code, status, created_at, updated_at")

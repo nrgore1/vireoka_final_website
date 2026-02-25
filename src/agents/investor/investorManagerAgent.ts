@@ -4,16 +4,6 @@ import { fetchMe } from "@/repo/accessRepo";
 import { verifyInvestorSession } from "@/lib/investorSession";
 
 /**
- * Internal states (kept for any non-portal callers)
- */
-export type AccessState =
-  | "logged_out"
-  | "no_access"
-  | "needs_nda"
-  | "needs_terms"
-  | "active";
-
-/**
  * Portal-facing states (what pages/layout compare against)
  */
 export type PortalAccessState =
@@ -32,56 +22,35 @@ function isAcceptedStatus(s: unknown): boolean {
   return s.toLowerCase() === "accepted";
 }
 
-function pickRole(me: unknown): string {
-  const m: any = me as any;
+function pickRole(meData: any): string {
   const role =
-    m?.role ??
-    m?.data?.role ??
-    m?.user?.role ??
-    m?.profile?.role ??
-    m?.lead?.role;
+    meData?.role ??
+    meData?.investor?.role ??
+    meData?.data?.role ??
+    "investor";
   return typeof role === "string" && role.length > 0 ? role : "investor";
 }
 
-/**
- * Keep internal helper in case other code imports it.
- */
-export async function resolveInvestorAccess(): Promise<AccessState> {
-  try {
-    await verifyInvestorSession();
-
-    const me = await fetchMe();
-    if (!me) return "no_access";
-
-    const nda = await getNdaStatus();
-    if (!isAcceptedStatus((nda as any)?.status)) return "needs_nda";
-
-    const terms = await getTermsStatus();
-    if (!isAcceptedStatus((terms as any)?.status)) return "needs_terms";
-
-    return "active";
-  } catch {
-    return "logged_out";
-  }
-}
-
-/**
- * ✅ Portal compatibility: returns { ok, role, state } where allowed state === "allowed"
- */
 export async function accessCheck(): Promise<AccessCheckResult> {
   try {
+    // must have an investor session (cookie-based)
     await verifyInvestorSession();
 
     const me = await fetchMe();
-    if (!me) return { ok: false, state: "pending_approval" };
+    if (!me?.ok) return { ok: false, state: "pending_approval" };
+
+    const meData = me.data || {};
+    const approved = Boolean(meData.approved);
+
+    if (!approved) return { ok: false, state: "pending_approval" };
 
     const nda = await getNdaStatus();
-    if (!isAcceptedStatus((nda as any)?.status)) return { ok: false, state: "nda_missing" };
+    if (!isAcceptedStatus(nda?.status)) return { ok: false, state: "nda_missing" };
 
     const terms = await getTermsStatus();
-    if (!isAcceptedStatus((terms as any)?.status)) return { ok: false, state: "terms_missing" };
+    if (!isAcceptedStatus(terms?.status)) return { ok: false, state: "terms_missing" };
 
-    return { ok: true, role: pickRole(me), state: "allowed" };
+    return { ok: true, role: pickRole(meData), state: "allowed" };
   } catch {
     return { ok: false, state: "logged_out" };
   }
