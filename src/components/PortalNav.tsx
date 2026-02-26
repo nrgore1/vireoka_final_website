@@ -9,6 +9,7 @@ const NAV = [
   { href: "/intelligence/portal/whitepaper", label: "Whitepaper" },
   { href: "/intelligence/portal/agents", label: "Digital Employees" },
   { href: "/intelligence/portal/modules", label: "Governance Modules" },
+  { href: "/intelligence/portal/contributors", label: "Contributors" },
 ];
 
 export function PortalNav() {
