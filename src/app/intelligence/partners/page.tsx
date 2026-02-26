@@ -1,58 +1,26 @@
-export const metadata = {
-  title: "Vireoka Intelligence — Partners",
-  description: "Partner lane for pilots, integration, and joint validation.",
-};
+import { CTABar } from "@/components/CTABar";
 
 export default function PartnersPage() {
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
-      <header>
-        <a className="text-sm font-semibold text-neutral-700 hover:underline" href="/intelligence/roles">
-          ← Back to roles
-        </a>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-neutral-900">
-          Strategic partners
-        </h1>
-        <p className="mt-4 text-base leading-7 text-neutral-700">
-          This lane is for organizations that want to co-design validation pilots, governance-aligned integrations,
-          or joint offerings—especially in contexts where trust, traceability, and control are non-negotiable.
-        </p>
-      </header>
+    <main className="mx-auto max-w-4xl px-6 py-16 space-y-10">
+      <h1 className="text-3xl font-bold text-vireoka-indigo">For Partners</h1>
 
-      <section className="mt-10 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-neutral-900">Partnership themes</h2>
-        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-neutral-700">
-          <li>Defined pilot scope with measurable outcomes</li>
-          <li>Governance fit: permissions, auditability, escalation paths</li>
-          <li>Security and privacy alignment (only what’s needed)</li>
-          <li>Operational adoption: training, change management, workflow clarity</li>
+      <p className="text-gray-700">
+        We partner with platforms and teams deploying agents at scale—where governance, auditability,
+        and controlled delegation are non-negotiable.
+      </p>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 space-y-3">
+        <h2 className="text-lg font-semibold text-gray-900">Partnership pathways</h2>
+        <ul className="list-disc pl-6 text-gray-700 space-y-2">
+          <li>Embed Vireoka governance runtime into agent systems</li>
+          <li>Co-develop digital employee templates and policy modules</li>
+          <li>Audit export + governance reporting integrations</li>
+          <li>Certification and standards participation</li>
         </ul>
       </section>
 
-      <section className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-6">
-        <h2 className="text-lg font-semibold text-neutral-900">How we start</h2>
-        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-neutral-700">
-          <li>Exploration call (use-case + constraints)</li>
-          <li>Mutual NDA (if proceeding)</li>
-          <li>Pilot definition (success metrics, owners, timeline)</li>
-          <li>Run + review (evidence, gaps, next iteration)</li>
-        </ol>
-      </section>
-
-      <section className="mt-10 flex flex-wrap gap-3">
-        <a
-          className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
-          href="/intelligence/apply"
-        >
-          Discuss a partnership →
-        </a>
-        <a
-          className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
-          href="/intelligence/platform"
-        >
-          Platform overview
-        </a>
-      </section>
+      <CTABar primaryHref="/intelligence/request-access" primaryLabel="Request Access" secondaryHref="/intelligence" secondaryLabel="Back" />
     </main>
   );
 }

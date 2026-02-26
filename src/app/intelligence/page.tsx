@@ -1,130 +1,128 @@
-export const metadata = {
-  title: "Vireoka Intelligence",
-  description:
-    "A role-based collaboration space for advisors, angels, and contributors exploring ethical AI, governance, and digital employees.",
-};
+import Link from "next/link";
+import { CTABar } from "@/components/CTABar";
+import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 
-function Card({
-  title,
-  body,
+const RoleLink = ({
   href,
-  eyebrow,
+  title,
+  desc,
 }: {
-  title: string;
-  body: string;
   href: string;
-  eyebrow?: string;
-}) {
-  return (
-    <a
-      href={href}
-      className="block rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-    >
-      {eyebrow ? (
-        <div className="text-xs font-semibold tracking-wide text-neutral-500">
-          {eyebrow}
-        </div>
-      ) : null}
-      <h3 className="mt-2 text-lg font-semibold text-neutral-900">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-neutral-700">{body}</p>
-      <div className="mt-4 text-sm font-semibold text-neutral-900">
-        Explore →
-      </div>
-    </a>
-  );
-}
+  title: string;
+  desc: string;
+}) => (
+  <Link
+    href={href}
+    className="rounded-2xl border border-gray-200 bg-white p-5 hover:bg-gray-50 transition"
+  >
+    <div className="text-sm font-semibold text-gray-900">{title}</div>
+    <div className="mt-1 text-sm text-gray-700">{desc}</div>
+  </Link>
+);
 
-export default function IntelligenceHome() {
+export default function IntelligenceOverview() {
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
-      <header className="max-w-2xl">
-        <div className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-semibold text-neutral-700">
+    <main className="mx-auto max-w-6xl px-6 py-16 space-y-12">
+      <section className="space-y-5">
+        <h1 className="text-4xl font-bold text-vireoka-indigo">
           Vireoka Intelligence
-        </div>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-neutral-900">
-          A collaboration space for ethical AI, governance, and trusted digital work.
         </h1>
-        <p className="mt-4 text-base leading-7 text-neutral-700">
-          This section is designed for vetted collaborators—advisors, angels, domain
-          experts, and contributors—who want to help shape responsible AI solutions
-          that are auditable, aligned, and practical in the real world.
+
+        <p className="text-lg text-gray-700">
+          Vireoka builds governance-native agentic infrastructure: digital employees that
+          operate within defined authority, policy constraints, and audit-native execution.
+          This is not generic AI tooling—this is runtime governance for delegation.
         </p>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a
-            className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
-            href="/intelligence/vision"
-          >
-            Read the vision
-          </a>
-          <a
-            className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
-            href="/intelligence/roles"
-          >
-            Choose your role
-          </a>
-          <a
-            className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
-            href="/intelligence/faq"
-          >
-            FAQ
-          </a>
-        </div>
-      </header>
-
-      <section className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card
-          eyebrow="North Star"
-          title="Vision"
-          body="What we’re building: practical ethical AI and governance that supports real teams, real decisions, and real accountability."
-          href="/intelligence/vision"
-        />
-        <Card
-          eyebrow="What it is"
-          title="Platform"
-          body="A modular approach that helps organizations move from experimentation to governed deployment—without sacrificing speed."
-          href="/intelligence/platform"
-        />
-        <Card
-          eyebrow="What it enables"
-          title="Digital Employees"
-          body="Trusted task automation and assistant workflows designed for reliability, traceability, and controlled autonomy."
-          href="/intelligence/digital-employees"
-        />
-        <Card
-          eyebrow="Get involved"
-          title="Roles"
-          body="Advisors, angels, and contributors each have a clear lane and expectations."
-          href="/intelligence/roles"
-        />
-        <Card
-          eyebrow="Process"
-          title="Access & trust"
-          body="Role-based access, staged disclosure, and NDA-first handling for confidential materials."
-          href="/intelligence/access"
-        />
-        <Card
-          eyebrow="Start here"
-          title="Apply / Contact"
-          body="Tell us who you are, what you can contribute, and what you’re looking to learn or validate."
-          href="/intelligence/apply"
+        <CTABar
+          primaryHref="/intelligence/portal"
+          primaryLabel="Open Portal (if approved)"
+          secondaryHref="/intelligence/request-access"
+          secondaryLabel="Request Access"
         />
       </section>
 
-      <section className="mt-12 rounded-2xl border border-neutral-200 bg-neutral-50 p-6">
-        <h2 className="text-lg font-semibold text-neutral-900">
-          Why “Intelligence”?
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-neutral-700">
-          Because the goal isn’t “more AI.” It’s better outcomes—decisions and actions
-          that are explainable, defensible, and aligned with constraints (policy,
-          safety, ethics, and business reality).
+      <ArchitectureDiagram />
+
+      <section className="space-y-4">
+        <h2 className="text-2xl font-semibold text-gray-900">Digital Employees</h2>
+        <p className="text-gray-700">
+          We deploy domain-specialized agents as digital employees, governed by a shared runtime:
+          authority envelopes, pre-execution enforcement, escalation logic, and immutable audit.
         </p>
-        <p className="mt-3 text-sm leading-6 text-neutral-700">
-          In this space you’ll find concept briefs, structured collaboration paths,
-          and (when appropriate) access to confidential materials based on role and
-          verification status.
+
+        <ul className="list-disc pl-6 text-gray-700 space-y-2">
+          <li><strong>Agent Kairo</strong> — Infrastructure orchestration</li>
+          <li><strong>Agent Angelo</strong> — Design systems management</li>
+          <li><strong>Agent Cody</strong> — Code quality & architecture governance</li>
+          <li><strong>Agent Vire</strong> — Website development and delivery</li>
+          <li><strong>Agent Viral</strong> — Marketing systems and demand orchestration</li>
+          <li><strong>Agent Stable</strong> — StableStack proving module (policy-constrained capital delegation)</li>
+        </ul>
+
+        <div className="pt-2">
+          <Link
+            href="/intelligence/stablestack"
+            className="text-sm font-semibold text-vireoka-indigo hover:underline"
+          >
+            Explore StableStack proving module →
+          </Link>
+        </div>
+      </section>
+
+      <section className="space-y-5">
+        <h2 className="text-2xl font-semibold text-gray-900">Choose your role</h2>
+
+        <p className="text-gray-700">
+          These pages are written for <strong>external stakeholders</strong> we’re actively engaging—advisors,
+          angels, VCs, partners, and contributors. You may fit one (or more) of these roles.
+          Pick the lens that matches you, and you’ll see how you can help Vireoka reach the market with confidence.
         </p>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <RoleLink
+            href="/intelligence/advisors"
+            title="Advisors"
+            desc="Shape governance primitives, deployment models, and category standards. Be a structural partner—not a name on a slide."
+          />
+          <RoleLink
+            href="/intelligence/angels"
+            title="Angel Investors"
+            desc="Early conviction in governed digital employees. Help accelerate credibility, introductions, and early pilots."
+          />
+          <RoleLink
+            href="/intelligence/vc"
+            title="VCs"
+            desc="Infrastructure thesis, expansion path, and control-plane economics. Evaluate the runtime + proof modules."
+          />
+          <RoleLink
+            href="/intelligence/partners"
+            title="Partners"
+            desc="Integrate governance into platforms, workflows, and agent ecosystems. Co-build modules and distribution pathways."
+          />
+          <RoleLink
+            href="/intelligence/contributors"
+            title="Contributors"
+            desc="Help build the technical and research layer: policy models, audit systems, orchestration patterns, and agent templates."
+          />
+          <RoleLink
+            href="/intelligence/request-access"
+            title="Request Portal Access"
+            desc="Get access to deeper material: agent catalog, governance modules, videos, demos, and the data room."
+          />
+        </div>
+
+        <div className="text-sm text-gray-600">
+          Not sure where you fit? Start with{" "}
+          <Link href="/intelligence/vc" className="font-semibold text-vireoka-indigo hover:underline">
+            VC
+          </Link>{" "}
+          for the highest-level thesis, or{" "}
+          <Link href="/intelligence/advisors" className="font-semibold text-vireoka-indigo hover:underline">
+            Advisors
+          </Link>{" "}
+          for the architecture lens.
+        </div>
       </section>
     </main>
   );
