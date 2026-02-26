@@ -8,6 +8,14 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
+function CodeBlock({ code }: { code: string }) {
+  return (
+    <pre className="mt-2 overflow-auto rounded-lg bg-white p-3 text-xs text-gray-800 border border-gray-200">
+      {code}
+    </pre>
+  );
+}
+
 function Card({
   id,
   icon,
@@ -78,8 +86,7 @@ export default function PortalContributorsPage() {
           we require diverse expertise spanning deep infrastructure, system logic, data topology, and security-grade UX.
         </p>
         <p className="text-gray-700">
-          Select your domain below to access the repositories, active bounties, and architectural blueprints for your
-          working group.
+          Select your domain below to access the repositories, active bounties, and architectural blueprints for your working group.
         </p>
 
         <div className="flex flex-wrap gap-2 pt-2">
@@ -181,27 +188,17 @@ export default function PortalContributorsPage() {
             <ol className="list-decimal pl-6 space-y-2">
               <li>
                 Clone the core repository and enter it:
-                <pre className="mt-2 overflow-auto rounded-lg bg-white p-3 text-xs text-gray-800 border border-gray-200">
-git clone &lt;repo-url&gt;
-cd &lt;repo-folder&gt;
-                </pre>
+                <CodeBlock code={`git clone <repo-url>\ncd <repo-folder>`} />
               </li>
               <li>
                 Initialize backend environment (adjust per stack):
-                <pre className="mt-2 overflow-auto rounded-lg bg-white p-3 text-xs text-gray-800 border border-gray-200">
-# example (python)
-python3 -m venv vireoka-env
-source vireoka-env/bin/activate
-pip install -r requirements.txt
-                </pre>
+                <CodeBlock
+                  code={`# example (python)\npython3 -m venv vireoka-env\nsource vireoka-env/bin/activate\npip install -r requirements.txt`}
+                />
               </li>
               <li>
                 Boot the UI layer:
-                <pre className="mt-2 overflow-auto rounded-lg bg-white p-3 text-xs text-gray-800 border border-gray-200">
-cd frontend
-npm install
-npm run dev
-                </pre>
+                <CodeBlock code={`cd frontend\nnpm install\nnpm run dev`} />
               </li>
             </ol>
           </div>
@@ -213,16 +210,11 @@ npm run dev
             <ol className="list-decimal pl-6 space-y-2">
               <li>
                 Start data containers (example):
-                <pre className="mt-2 overflow-auto rounded-lg bg-white p-3 text-xs text-gray-800 border border-gray-200">
-docker compose up -d graph-db vector-store
-                </pre>
+                <CodeBlock code={`docker compose up -d graph-db vector-store`} />
               </li>
               <li>
                 Seed a mock enterprise topology + baseline docs (example):
-                <pre className="mt-2 overflow-auto rounded-lg bg-white p-3 text-xs text-gray-800 border border-gray-200">
-# example
-python scripts/seed_mock_enterprise.py
-                </pre>
+                <CodeBlock code={`# example\npython scripts/seed_mock_enterprise.py`} />
               </li>
             </ol>
           </div>
@@ -234,17 +226,13 @@ python scripts/seed_mock_enterprise.py
             <ol className="list-decimal pl-6 space-y-2">
               <li>
                 Start the local event broker (example):
-                <pre className="mt-2 overflow-auto rounded-lg bg-white p-3 text-xs text-gray-800 border border-gray-200">
-python scripts/start_eda_broker.py
-                </pre>
+                <CodeBlock code={`python scripts/start_eda_broker.py`} />
               </li>
               <li>
                 Fire a test payload (example):
-                <pre className="mt-2 overflow-auto rounded-lg bg-white p-3 text-xs text-gray-800 border border-gray-200">
-curl -X POST http://localhost:8000/api/v1/events/ingress \
-  -H "Content-Type: application/json" \
-  -d '{"source":"telemetry","event":"cpu_spike","service_node":"checkout-api"}'
-                </pre>
+                <CodeBlock
+                  code={`curl -X POST http://localhost:8000/api/v1/events/ingress \\\n  -H "Content-Type: application/json" \\\n  -d '{"source":"telemetry","event":"cpu_spike","service_node":"checkout-api"}'`}
+                />
               </li>
               <li>
                 Verify the dashboard: confirm the event hits the stream, routes to the correct agent, and produces a proposed action in the sandbox.
@@ -259,20 +247,12 @@ curl -X POST http://localhost:8000/api/v1/events/ingress \
             <ol className="list-decimal pl-6 space-y-2">
               <li>
                 Create your branch with clear naming:
-                <pre className="mt-2 overflow-auto rounded-lg bg-white p-3 text-xs text-gray-800 border border-gray-200">
-git checkout -b feature/kairo-aws-routing
-# or
-git checkout -b fix/cody-linting-rules
-                </pre>
+                <CodeBlock code={`git checkout -b feature/kairo-aws-routing\n# or\ngit checkout -b fix/cody-linting-rules`} />
               </li>
               <li>Execute the work and keep changes aligned to the governance model (no bypasses).</li>
               <li>
                 Run tests (example):
-                <pre className="mt-2 overflow-auto rounded-lg bg-white p-3 text-xs text-gray-800 border border-gray-200">
-npm test
-# or
-pytest
-                </pre>
+                <CodeBlock code={`npm test\n# or\npytest`} />
               </li>
             </ol>
           </div>
@@ -281,9 +261,7 @@ pytest
         <details className="rounded-xl border border-gray-200 bg-gray-50 p-4">
           <summary className="cursor-pointer text-sm font-semibold text-gray-900">Step 5 — Submit your pull request (PR)</summary>
           <div className="mt-3 space-y-3 text-sm text-gray-700">
-            <p className="text-sm text-gray-700">
-              Your PR description must include:
-            </p>
+            <p className="text-sm text-gray-700">Your PR description must include:</p>
             <ul className="list-disc pl-6 space-y-2">
               <li><strong>Target agent/layer:</strong> (e.g., Kairo, Cody, gateway, UI)</li>
               <li><strong>Objective:</strong> what limitation does this solve?</li>
