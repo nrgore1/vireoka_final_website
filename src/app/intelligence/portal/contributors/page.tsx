@@ -1,270 +1,145 @@
 import Link from "next/link";
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function CodeBlock(props: { code: string }) {
   return (
-    <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
-      <div className="mt-3 text-sm leading-6 text-neutral-700">{children}</div>
-    </section>
-  );
-}
-
-function CodeBlock({ code }: { code: string }) {
-  return (
-    <pre className="mt-2 overflow-x-auto rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-xs leading-5 text-neutral-800">
-      <code>{code}</code>
+    <pre className="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-800">
+      <code>{props.code}</code>
     </pre>
   );
 }
 
-export default function ContributorsPage() {
+function Section(props: { title: string; children: React.ReactNode }) {
   return (
-    <main className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
-      <div className="flex items-center justify-between gap-4">
+    <section className="rounded-xl border border-slate-200 bg-white p-6">
+      <h2 className="text-lg font-semibold text-slate-900">{props.title}</h2>
+      <div className="mt-3 text-sm text-slate-700">{props.children}</div>
+    </section>
+  );
+}
+
+export default function ContributorPortal() {
+  return (
+    <main className="mx-auto max-w-6xl px-4 sm:px-6 py-12">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-vireoka-indigo">
-            Contributor Portal
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
+            Intelligence Portal • Contributors
+          </div>
+          <h1 className="mt-4 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
+            Contributor Hub: build Kairo and the governed worker runtime.
           </h1>
-          <p className="mt-1 text-sm text-neutral-700">
-            Welcome to the central forge of the Vireoka ecosystem. To build a truly governed,
-            autonomous digital workforce, we require diverse expertise spanning deep infrastructure,
-            reasoning systems, data topology, and security UX.
+          <p className="mt-3 max-w-3xl text-sm sm:text-base text-slate-600">
+            Welcome to the central forge of the Vireoka ecosystem. To build a governed, autonomous digital workforce,
+            we need deep infrastructure engineering, system logic, memory/data architecture, and security UX.
           </p>
         </div>
 
-        <Link
-          href="/intelligence/portal"
-          className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 shadow-sm hover:bg-neutral-50"
-        >
-          Back to Portal →
+        <Link href="/intelligence/portal" className="mt-2 text-sm font-medium text-vireoka-indigo underline">
+          Back to portal →
         </Link>
       </div>
 
-      <div className="mt-6 grid gap-4">
-        <Section title="Hubs & Categories">
-          <p>
-            Select your domain below to access the repositories, active bounties, and architectural
-            blueprints for your specific working group.
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Section title="⚙️ Agentic Orchestration & Core Engineering">
+          <p className="text-slate-600">
+            Systems engineers and backend architects building the pathways Kairo uses to observe and act.
           </p>
+          <ul className="mt-3 space-y-2">
+            <li>• Event-driven routing and safe execution controllers (shadow → approval → autonomous).</li>
+            <li>• Multi-cloud connectors and K8s-native integrations.</li>
+            <li>• Scale and reliability work to handle high event throughput.</li>
+          </ul>
         </Section>
 
-        <Section title="⚙️ Category 1: Agentic Orchestration & Core Engineering">
-          <p className="font-medium text-neutral-900">
-            Focus: Microservices, Event-Driven Architecture (EDA), Serverless, and Edge+Cloud routing.
+        <Section title="🧠 System Logic & Decisioning">
+          <p className="text-slate-600">
+            Translate operational constraints into reclaimability scoring and action policies for mixed training + inference clusters.
           </p>
-
-          <p className="mt-2">
-            This hub is for systems engineers and backend architects building the physical pathways
-            our digital workforce uses to communicate and execute tasks.
-          </p>
-
-          <div className="mt-3">
-            <div className="text-sm font-semibold text-neutral-900">Current Working Groups</div>
-            <ul className="mt-2 list-disc space-y-2 pl-5">
-              <li>
-                <span className="font-medium text-neutral-900">Infrastructure & DevOps (Kairo):</span>{" "}
-                Expanding Kairo’s ability to autonomously provision Edge and Cloud resources and
-                resolve telemetry anomalies.
-              </li>
-              <li>
-                <span className="font-medium text-neutral-900">SDLC & Code Quality:</span> Integrating
-                automated, secure PR review patterns into diverse CI/CD pipelines (GitHub Actions,
-                GitLab).
-              </li>
-              <li>
-                <span className="font-medium text-neutral-900">Creative & Growth Pods:</span> Expanding
-                tool-access APIs that allow design and growth workflows to ship localized assets
-                safely.
-              </li>
-            </ul>
-          </div>
-
-          <div className="mt-4">
-            <div className="text-sm font-semibold text-neutral-900">Active Bounties</div>
-            <ul className="mt-2 list-disc space-y-2 pl-5">
-              <li>
-                Optimize EDA routing logic to handle 10k+ concurrent autonomous events with
-                sub-second latency.
-              </li>
-              <li>Build a new serverless connector for multi-cloud load balancing.</li>
-            </ul>
-          </div>
+          <ul className="mt-3 space-y-2">
+            <li>• Reclaimability scoring features: utilization trend, memory residency, burst frequency, queue depth.</li>
+            <li>• Guardrails: protected pools, change windows, rollback triggers, max-change limits.</li>
+            <li>• Decision journal: reason, policy matched, expected savings, outcome verification.</li>
+          </ul>
         </Section>
 
-        <Section title="🧠 Category 2: Cognitive Engineering & System Logic">
-          <p className="font-medium text-neutral-900">
-            Focus: Model Access, Fine-Tuning, Prompt Management, and Logic Systems.
+        <Section title="🕸️ Memory & Data Architecture">
+          <p className="text-slate-600">
+            Make the worker context-rich: ingest telemetry, normalize signals, and support fast lookups for decisioning and audits.
           </p>
-
-          <p className="mt-2">
-            This hub is for AI researchers and prompt engineers focused on safe reasoning,
-            constraint-aware planning, and professional-grade agent behavior.
-          </p>
-
-          <div className="mt-4">
-            <div className="text-sm font-semibold text-neutral-900">Active Bounties</div>
-            <ul className="mt-2 list-disc space-y-2 pl-5">
-              <li>
-                Submit a dataset of 500 edge-case PR reviews demonstrating how to prioritize
-                long-term architectural stability over short-term deployment speed.
-              </li>
-              <li>
-                Refine embedding-layer logic for Answer Engine Optimization (AEO) to better predict
-                search intent shifts.
-              </li>
-            </ul>
-          </div>
+          <ul className="mt-3 space-y-2">
+            <li>• Schemas for metrics snapshots, actions, and outcomes.</li>
+            <li>• Exportable reports for pilots (weekly ROI summaries).</li>
+            <li>• Retrieval patterns for “why did we do this?” explainability.</li>
+          </ul>
         </Section>
 
-        <Section title="🕸️ Category 3: Memory & Data Architecture">
-          <p className="font-medium text-neutral-900">
-            Focus: Vector Stores, Graph Databases, and Structured/Unstructured Ingestion.
+        <Section title="🛡️ Security UX & Frontend Operations">
+          <p className="text-slate-600">
+            Build trust: approval flows, autonomy sliders, immutable audit logs, and safe human overrides.
           </p>
-
-          <p className="mt-2">
-            An AI without memory is just a chatbot. This hub is for data engineers building the
-            schemas that allow digital workers to maintain real-time context and safe dependency
-            awareness.
-          </p>
-
-          <div className="mt-4">
-            <div className="text-sm font-semibold text-neutral-900">Active Bounties</div>
-            <ul className="mt-2 list-disc space-y-2 pl-5">
-              <li>
-                Build automated data-scrubbing that updates Graph DB dependency edges when a new
-                cloud resource is provisioned.
-              </li>
-              <li>
-                Improve vector search retrieval speed for massive, multi-language compliance and
-                brand documents.
-              </li>
-            </ul>
-          </div>
+          <ul className="mt-3 space-y-2">
+            <li>• “Action Sandbox” UI for reviewing proposed actions.</li>
+            <li>• Audit log UI with rationale and rollback links.</li>
+            <li>• Safe input handling and guardrails for admin actions.</li>
+          </ul>
         </Section>
+      </div>
 
-        <Section title="🛡️ Category 4: Security UX & Frontend Operations">
-          <p className="font-medium text-neutral-900">
-            Focus: Agent UI Layer, Dashboards, Data Isolation, and Audit Logs.
+      <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Section title="Contributor onboarding guide (local sandbox)">
+          <p className="text-slate-600">
+            This is a reference workflow used by our internal team to keep contributor onboarding consistent.
           </p>
 
-          <p className="mt-2">
-            The greatest barrier to enterprise AI is trust. Here, you build the Security UX — the
-            human-in-the-loop interfaces that allow leaders to safely orchestrate digital workers.
-          </p>
+          <p className="mt-4 font-semibold">Step 1: Clone and install</p>
+          <CodeBlock
+            code={`git clone https://github.com/vireoka/vireoka-core.git
+cd vireoka-core
+npm install
+npm run dev`}
+          />
 
-          <div className="mt-4">
-            <div className="text-sm font-semibold text-neutral-900">Active Bounties</div>
-            <ul className="mt-2 list-disc space-y-2 pl-5">
-              <li>
-                Design and code a mobile-responsive “Action Sandbox” where managers can review and
-                edit proposed changes.
-              </li>
-              <li>
-                Implement an immutable, visually scannable Audit Log UI that shows rationale behind
-                autonomous actions.
-              </li>
-            </ul>
-          </div>
-        </Section>
+          <p className="mt-4 font-semibold">Step 2: Start local data services (example)</p>
+          <CodeBlock code={`docker compose up -d`} />
 
-        <Section title="Contributor Onboarding Guide">
-          <p className="font-medium text-neutral-900">
-            From Zero to First PR: Booting Your Local Digital Workforce
-          </p>
-
-          <p className="mt-2">
-            Follow these steps to initialize your local sandbox, connect memory layers, and submit
-            your first bounty PR.
-          </p>
-
-          <div className="mt-4">
-            <div className="text-sm font-semibold text-neutral-900">
-              Step 1: Clone & Provision the Local Sandbox
-            </div>
-            <CodeBlock
-              code={`git clone https://github.com/vireoka/vireoka-core.git
-cd vireoka-core`}
-            />
-          </div>
-
-          <div className="mt-4">
-            <div className="text-sm font-semibold text-neutral-900">
-              Step 2: Initialize the Memory Layers
-            </div>
-            <CodeBlock
-              code={`docker-compose up -d graph-db vector-store
-python manage.py seed_mock_enterprise`}
-            />
-          </div>
-
-          <div className="mt-4">
-            <div className="text-sm font-semibold text-neutral-900">
-              Step 3: Trigger the Event-Driven Architecture (EDA)
-            </div>
-            <CodeBlock code={`python manage.py start_eda_broker`} />
-            <CodeBlock
-              code={`curl -X POST http://localhost:8000/api/v1/events/ingress \\
+          <p className="mt-4 font-semibold">Step 3: Fire a test event (example)</p>
+          <CodeBlock
+            code={`curl -X POST http://localhost:8000/api/v1/events/ingress \\
   -H "Content-Type: application/json" \\
-  -d "{\\"source\\":\\"telemetry\\",\\"event\\":\\"cpu_spike\\",\\"service_node\\":\\"checkout-api\\"}"`}
-            />
-            <p className="mt-2 text-xs text-neutral-600">
-              Verify the event appears in the dashboard stream and routes to the correct worker lane.
-            </p>
-          </div>
-
-          <div className="mt-4">
-            <div className="text-sm font-semibold text-neutral-900">Step 4: Claim Your First Bounty</div>
-            <CodeBlock
-              code={`git checkout -b feature/kairo-aws-routing
-# or
-git checkout -b fix/agent-code-linting-rules`}
-            />
-          </div>
-
-          <div className="mt-4">
-            <div className="text-sm font-semibold text-neutral-900">Step 5: Submit Your Pull Request</div>
-            <p className="mt-2">
-              Your PR description should include: target worker, objective, and a brief rationale
-              describing how the change respects platform constraints and stability.
-            </p>
-          </div>
+  -d '{\"source\":\"telemetry\",\"event\":\"cpu_spike\",\"service_node\":\"checkout-api\"}'`}
+          />
         </Section>
 
-        <Section title="PR Review Guidelines: Maintainer’s Playbook">
-          <p className="font-medium text-neutral-900">Governing the Digital Workforce Ecosystem</p>
-
-          <p className="mt-2">
-            Maintainers are the final governance layer. Don’t review syntax — review intent and
-            system impact.
+        <Section title="Maintainer playbook (PR review)">
+          <p className="text-slate-600">
+            Maintainers are the final governance layer. Don’t lint by hand — focus on architectural intent and systemic impact.
           </p>
 
-          <ol className="mt-3 list-decimal space-y-2 pl-5">
+          <ul className="mt-3 space-y-2">
             <li>
-              Verify automated checks (security, dependency impact, formatting). If blocked, let the
-              contributor resolve issues first.
+              <span className="font-semibold">1) Automated pre-flight:</span> security checks, dependency impact hints, formatting.
             </li>
             <li>
-              Evaluate systemic integrity, bounded autonomy, and cross-cutting standards (accessibility,
-              localization, auditability).
+              <span className="font-semibold">2) Human architecture review:</span> does it preserve bounded autonomy and EDA patterns?
             </li>
             <li>
-              Provide rationale with edits so the system learns preferences over time.
+              <span className="font-semibold">3) Feedback loop:</span> explain deltas so the system learns preferred patterns.
             </li>
             <li>
-              Merge cleanly and approve bounty tagging for automated crediting.
+              <span className="font-semibold">4) Merge with intent:</span> clean commit message and bounty crediting.
             </li>
-          </ol>
-
-          <p className="mt-3 text-sm font-semibold text-neutral-900">
-            “Automation secures the code. You secure the vision. Merge with intent.”
-          </p>
+          </ul>
         </Section>
+      </div>
+
+      <div className="mt-10 rounded-xl border border-slate-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-slate-900">Suggested first bounties</h2>
+        <ul className="mt-3 space-y-2 text-sm text-slate-700">
+          <li>• Add GPU memory residency to reclaimability scoring.</li>
+          <li>• Build an audit log “diff” view: recommendation → action → outcome.</li>
+          <li>• Create a training-lane execution guardrail: max 5% nodes per window.</li>
+          <li>• Export weekly ROI summary as CSV + email.</li>
+        </ul>
       </div>
     </main>
   );

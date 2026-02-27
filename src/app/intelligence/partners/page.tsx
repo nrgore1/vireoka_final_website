@@ -1,26 +1,58 @@
-import { CTABar } from "@/components/CTABar";
+import Link from "next/link";
 
-export default function PartnersPage() {
+export default function Page() {
   return (
-    <main className="mx-auto max-w-4xl px-6 py-16 space-y-10">
-      <h1 className="text-3xl font-bold text-vireoka-indigo">For Partners</h1>
+    <main className="mx-auto max-w-5xl px-4 sm:px-6 py-12">
+      <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
+        Vireoka Intelligence • VC Funds & Partners
+      </div>
 
-      <p className="text-gray-700">
-        We partner with platforms and teams deploying agents at scale—where governance, auditability,
-        and controlled delegation are non-negotiable.
+      <h1 className="mt-4 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">Diligence Vireoka as AI labor infrastructure: an OS for autonomous digital workers.</h1>
+
+      <p className="mt-3 max-w-3xl text-sm sm:text-base text-slate-600">
+        For funds, studios, and strategic partners: we can share deeper materials after NDA, including architecture notes, pilot metrics, and a working data room.
       </p>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 space-y-3">
-        <h2 className="text-lg font-semibold text-gray-900">Partnership pathways</h2>
-        <ul className="list-disc pl-6 text-gray-700 space-y-2">
-          <li>Embed Vireoka governance runtime into agent systems</li>
-          <li>Co-develop digital employee templates and policy modules</li>
-          <li>Audit export + governance reporting integrations</li>
-          <li>Certification and standards participation</li>
-        </ul>
-      </section>
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <section className="rounded-xl border border-slate-200 bg-white p-6">
+          <h2 className="text-base font-semibold text-slate-900">What you'll see</h2>
+          <ul className="mt-3 space-y-2 text-sm text-slate-700">
+            <li>• Category thesis: digital workers as delegated operational responsibility</li>
+            <li>• Kairo wedge: production-safe cost + reliability optimization</li>
+            <li>• Roadmap to multi-role platform economics (platform + worker modules)</li>
+            <li>• Governance as enterprise-grade autonomy (policy + audit trail)</li>
+          </ul>
+        </section>
 
-      <CTABar primaryHref="/intelligence/request-access" primaryLabel="Request Access" secondaryHref="/intelligence" secondaryLabel="Back" />
+        <section className="rounded-xl border border-slate-200 bg-white p-6">
+          <h2 className="text-base font-semibold text-slate-900">Primary focus: Kairo</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Kairo is our first autonomous-ready digital worker: a production path focused on reducing GPU waste
+            safely (shadow → guarded execution → closed-loop validation). Governance is embedded as policy + auditability.
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              href="/intelligence/kairo"
+              className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
+            >
+              Read Kairo overview
+            </Link>
+            <Link
+              href="/intelligence/request-access"
+              className="rounded-md bg-vireoka-indigo px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-95"
+            >
+              Request portal access
+            </Link>
+          </div>
+
+          <div className="mt-4">
+            <Link href="/intelligence" className="text-sm font-medium text-slate-600 underline">
+              Back to Intelligence
+            </Link>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

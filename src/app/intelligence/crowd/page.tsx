@@ -1,67 +1,71 @@
-export const metadata = {
-  title: "Vireoka Intelligence — Crowdsourcing",
-  description: "Contributor lane for structured evaluation and domain input.",
-};
+import Link from "next/link";
 
 export default function CrowdPage() {
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
-      <header>
-        <a className="text-sm font-semibold text-neutral-700 hover:underline" href="/intelligence/roles">
-          ← Back to roles
-        </a>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-neutral-900">
-          Crowdsourcing contributors
-        </h1>
-        <p className="mt-4 text-base leading-7 text-neutral-700">
-          This lane is for domain experts and practitioners who want to help test, critique, and improve
-          governed AI workflows. Contributions are structured to produce useful signal—not noise.
-        </p>
-      </header>
+    <main className="mx-auto max-w-5xl px-4 sm:px-6 py-12">
+      <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
+        Vireoka Intelligence • Crowd & Community
+      </div>
 
-      <section className="mt-10 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-neutral-900">What you can contribute</h2>
-        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-neutral-700">
-          <li>Real-world edge cases and failure modes</li>
-          <li>Evaluation criteria and governance expectations by domain</li>
-          <li>Test scenarios and acceptance rubrics</li>
-          <li>UX feedback: what would make this usable day-to-day?</li>
-        </ul>
-      </section>
+      <h1 className="mt-4 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
+        Follow the build: Kairo, our first digital infrastructure worker.
+      </h1>
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-6">
-          <h2 className="text-lg font-semibold text-neutral-900">How it works</h2>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-neutral-700">
-            <li>Apply and choose your domains (e.g., compliance, finance, healthcare, ops).</li>
-            <li>Receive structured tasks (review templates, scenario prompts, rubrics).</li>
-            <li>Submit feedback; earn reputation and deeper collaboration access.</li>
-          </ol>
-        </div>
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-neutral-900">What we don’t do</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-neutral-700">
-            <li>No public sharing of confidential materials.</li>
-            <li>No vague “tell us what you think” requests—everything is scoped.</li>
-            <li>No requirement to expose your own proprietary data.</li>
+      <p className="mt-3 max-w-3xl text-sm sm:text-base text-slate-600">
+        This path is for people who want to track progress, share feedback, and amplify launches. You don’t need
+        a formal title — if you can help us test messaging, validate the wedge, and spread credible updates, you
+        belong here.
+      </p>
+
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <section className="rounded-xl border border-slate-200 bg-white p-6">
+          <h2 className="text-base font-semibold text-slate-900">What we're building</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Vireoka is the operating system for autonomous digital workers — software entities with delegated
+            responsibilities, policy boundaries, and audit trails. Our first production role is{" "}
+            <span className="font-medium text-slate-800">Kairo</span>, focused on eliminating GPU waste safely.
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link href="/intelligence/kairo" className="text-sm font-medium text-vireoka-indigo underline">
+              Read the Kairo efficiency case →
+            </Link>
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-6">
+          <h2 className="text-base font-semibold text-slate-900">How you can help</h2>
+          <ul className="mt-3 space-y-2 text-sm text-slate-700">
+            <li>• Share the Kairo thesis with operators and founders who feel GPU burn pain.</li>
+            <li>• Give feedback on landing-page clarity and “why now” urgency.</li>
+            <li>• Introduce us to AI-native teams running mixed training + inference clusters.</li>
+            <li>• Help us recruit contributors for observability, K8s integrations, and dashboards.</li>
           </ul>
-        </div>
+
+          <div className="mt-5">
+            <Link
+              href="/intelligence/request-access"
+              className="rounded-md bg-vireoka-indigo px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-95"
+            >
+              Request portal access
+            </Link>
+          </div>
+        </section>
+      </div>
+
+      <section className="mt-10 rounded-xl border border-slate-200 bg-white p-6">
+        <h2 className="text-base font-semibold text-slate-900">A simple promise</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          We will not ship hype. We will ship measurable savings and safe execution. If Kairo cannot prove impact
+          without harming SLOs, we will keep it in shadow mode until it can.
+        </p>
       </section>
 
-      <section className="mt-10 flex flex-wrap gap-3">
-        <a
-          className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
-          href="/intelligence/apply"
-        >
-          Join as a Contributor →
-        </a>
-        <a
-          className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
-          href="/intelligence/faq"
-        >
-          FAQ
-        </a>
-      </section>
+      <div className="mt-8">
+        <Link href="/intelligence" className="text-sm font-medium text-slate-600 underline">
+          Back to Intelligence
+        </Link>
+      </div>
     </main>
   );
 }
