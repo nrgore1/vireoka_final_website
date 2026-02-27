@@ -1,78 +1,133 @@
 import Link from "next/link";
-import { CTABar } from "@/components/CTABar";
-import { GovernanceFlowDiagram } from "@/components/GovernanceFlowDiagram";
 
-export default function HomePage() {
+function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto max-w-6xl px-6 py-16 space-y-14">
-      <section className="space-y-6">
-        <div className="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700">
-          Governed Intelligence Infrastructure • Digital Employees • Runtime Enforcement
+    <span className="inline-flex items-center rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs text-neutral-700 shadow-sm">
+      {children}
+    </span>
+  );
+}
+
+function Card({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <h3 className="text-base font-semibold text-neutral-900">{title}</h3>
+      <div className="mt-3 text-sm leading-6 text-neutral-700">{children}</div>
+    </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <main className="mx-auto max-w-6xl px-4 sm:px-6 py-14">
+      <div className="mx-auto max-w-3xl text-center">
+        <div className="flex flex-wrap justify-center gap-2">
+          <Chip>Autonomous Digital Workers</Chip>
+          <Chip>Policy-bound execution</Chip>
+          <Chip>Audit by default</Chip>
         </div>
 
-        <h1 className="text-5xl font-bold text-vireoka-indigo leading-tight">
-          Vireoka builds governed digital employees for the delegation era.
+        <h1 className="mt-6 text-4xl font-semibold tracking-tight text-vireoka-indigo sm:text-5xl">
+          Vireoka is the operating system for autonomous digital workers.
         </h1>
 
-        <p className="text-lg text-gray-700 max-w-3xl">
-          Most AI vendors ship generic copilots and call it transformation.
-          Vireoka breaks that cliché by deploying domain-specialized agents as digital employees—
-          operating inside authority envelopes, policy constraints, and immutable audit trails.
+        <p className="mt-4 text-lg leading-7 text-neutral-700">
+          The first production role is{" "}
+          <span className="font-medium text-neutral-900">Kairo</span> — a Digital Infrastructure
+          Worker that helps teams run AI workloads with less waste and less firefighting, without
+          expanding their DevOps team.
         </p>
 
-        <CTABar
-          primaryHref="/intelligence"
-          primaryLabel="Explore Vireoka Intelligence"
-          secondaryHref="/intelligence/request-access"
-          secondaryLabel="Request Portal Access"
-        />
-      </section>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href="/intelligence/request-access"
+            className="inline-flex items-center justify-center rounded-xl bg-vireoka-indigo px-5 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-95"
+          >
+            Request Portal Access
+          </Link>
 
-      <section className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 space-y-3">
-          <h2 className="text-xl font-semibold text-gray-900">What we deploy</h2>
-          <p className="text-gray-700">
-            Digital employees that coordinate workflows across infrastructure, design, development, finance,
-            and marketing—without adding uncontrolled autonomy.
-          </p>
-          <ul className="list-disc pl-6 text-gray-700 space-y-2">
-            <li>Agent Kairo (infra)</li>
-            <li>Agent Angelo (design)</li>
-            <li>Agent Cody (code governance)</li>
-            <li>Agent Vire (web delivery)</li>
-            <li>Agent Viral (marketing orchestration)</li>
+          <Link
+            href="/intelligence"
+            className="inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 shadow-sm hover:bg-neutral-50"
+          >
+            Explore Vireoka Intelligence →
+          </Link>
+        </div>
+
+        <p className="mt-4 text-xs text-neutral-500">
+          Access is gated. If required, you’ll receive an NDA link by email before approval.
+        </p>
+      </div>
+
+      <div className="mt-12 grid gap-4 md:grid-cols-2">
+        <Card title="Kairo — what it does">
+          <ul className="mt-2 list-disc space-y-2 pl-5">
+            <li>
+              Monitors production AI systems and detects GPU waste, capacity drift, and noisy
+              firefighting patterns.
+            </li>
+            <li>
+              Produces safe, policy-aware recommendations (shadow mode) and can execute changes
+              gradually (approved mode) with rollback.
+            </li>
+            <li>
+              Optimizes across environments and vendors by focusing on customer efficiency — not
+              maximizing any single cloud’s consumption.
+            </li>
+            <li>Turns savings into a measurable ledger: “Kairo saved you $X this month.”</li>
           </ul>
-          <div className="pt-2">
-            <Link href="/intelligence" className="text-sm font-semibold text-vireoka-indigo hover:underline">
-              See role-specific intelligence →
-            </Link>
-          </div>
-        </div>
+        </Card>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 space-y-3">
-          <h2 className="text-xl font-semibold text-gray-900">What makes it durable</h2>
-          <p className="text-gray-700">
-            Governance is runtime architecture. Every action is validated before execution and recorded during execution.
+        <Card title="What makes it durable">
+          <p>
+            Autonomy only works when it’s accountable. Kairo operates inside an authority envelope:
+            proposals are validated against policy before execution, and every action is recorded
+            during execution.
           </p>
-          <GovernanceFlowDiagram />
-        </div>
-      </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">StableStack proving module</h2>
-        <p className="text-gray-700">
-          StableStack demonstrates policy-constrained, AI-assisted capital delegation—one of the highest-stakes environments
-          to validate governance primitives that generalize across industries.
+          <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+            <div className="text-xs font-semibold text-neutral-900">Runtime flow</div>
+            <div className="mt-2 grid grid-cols-6 gap-2 text-[11px] text-neutral-700">
+              {["Trigger", "Scope", "Policy", "Authorize", "Execute", "Audit"].map((x) => (
+                <div
+                  key={x}
+                  className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-center shadow-sm"
+                >
+                  {x}
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-neutral-600">
+              No bypass path. If a proposal violates constraints, it is blocked and logged.
+            </p>
+          </div>
+        </Card>
+      </div>
+
+      <div className="mt-10 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-neutral-900">Who the Intelligence Portal is for</h2>
+        <p className="mt-2 text-sm leading-6 text-neutral-700">
+          The portal is designed for external stakeholders who can help Vireoka reach the market
+          with confidence — investors, advisors, partners, operators, and contributors. You can
+          engage in any role and switch as needed.
         </p>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/intelligence/stablestack" className="rounded-xl bg-vireoka-indigo px-5 py-3 text-sm font-semibold text-white hover:opacity-95">
-            Explore StableStack
-          </Link>
-          <Link href="/intelligence/portal" className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50">
-            Portal (if approved)
-          </Link>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {["Advisors", "Angels", "VC / funds", "Partners", "Operators", "Contributors"].map((x) => (
+            <span
+              key={x}
+              className="inline-flex items-center rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs text-neutral-700"
+            >
+              {x}
+            </span>
+          ))}
         </div>
-      </section>
+      </div>
     </main>
   );
 }

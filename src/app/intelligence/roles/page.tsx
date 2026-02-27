@@ -1,6 +1,7 @@
 export const metadata = {
-  title: "Vireoka Intelligence — Roles",
-  description: "Advisor, Angel, Contributor, and Partner lanes inside Vireoka Intelligence.",
+  title: "Vireoka Intelligence — Stakeholder Roles",
+  description:
+    "External stakeholder roles (Advisor, Angel, Contributor, Partner) inside Vireoka Intelligence.",
 };
 
 function RoleCard({
@@ -35,11 +36,11 @@ export default function RolesPage() {
           ← Back to Intelligence
         </a>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight text-neutral-900">
-          Choose your lane
+          Explore stakeholder roles
         </h1>
         <p className="mt-4 text-base leading-7 text-neutral-700">
-          We’re building with collaboration in mind. Each role has a defined scope so you can
-          contribute meaningfully, evaluate progress, and stay aligned on expectations.
+          These are <span className="font-semibold text-neutral-900">external roles</span> for people who want to engage with Vireoka and
+          help it reach the market with confidence. Choose the lane that matches how you want to contribute or evaluate.
         </p>
       </header>
 
@@ -47,25 +48,25 @@ export default function RolesPage() {
         <RoleCard
           who="NDA + verification"
           title="Advisors"
-          focus="Help shape product direction, governance design, go-to-market, and credibility—without operational burden."
+          focus="Shape positioning, governance guardrails, product strategy, and go-to-market. Help make Kairo enterprise-trustworthy."
           href="/intelligence/advisors"
         />
         <RoleCard
           who="NDA + verification"
           title="Angel investors"
-          focus="Support the mission and validate strategy. Access staged materials and structured diligence paths."
+          focus="Support the mission and validate strategy with staged access: demos, metrics snapshots, and structured diligence paths."
           href="/intelligence/angels"
         />
         <RoleCard
           who="Verified collaborator"
-          title="Crowdsourcing contributors"
-          focus="Contribute domain knowledge, evaluation feedback, and structured test cases. Earn reputation and access."
+          title="Contributors"
+          focus="Join working groups, bounties, and architecture reviews. Help build the digital worker ecosystem through practical output."
           href="/intelligence/crowd"
         />
         <RoleCard
           who="By invitation"
           title="Strategic partners"
-          focus="Co-design pilots, integrations, or joint validation—aligned to governance, safety, and measurable ROI."
+          focus="Co-design pilots, integrations, or joint validation aligned to reliability, measurable ROI, and policy-bound operations."
           href="/intelligence/partners"
         />
       </section>
@@ -73,14 +74,14 @@ export default function RolesPage() {
       <section className="mt-10 rounded-2xl border border-neutral-200 bg-neutral-50 p-6">
         <h2 className="text-lg font-semibold text-neutral-900">Not sure where you fit?</h2>
         <p className="mt-2 text-sm leading-6 text-neutral-700">
-          Start with the Apply form and select the closest match. We’ll route you to the right lane.
+          Request access, pick the closest role, and tell us what you want to evaluate or contribute. We’ll route you to the right lane.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <a
-            className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
-            href="/intelligence/apply"
+            className="rounded-xl !bg-vireoka-indigo px-4 py-2 text-sm font-semibold !text-white shadow-sm hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-vireoka-indigo/40"
+            href="/intelligence/request-access"
           >
-            Apply / Contact →
+            Request access →
           </a>
           <a
             className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"

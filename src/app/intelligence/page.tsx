@@ -1,128 +1,135 @@
 import Link from "next/link";
-import { CTABar } from "@/components/CTABar";
-import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 
-const RoleLink = ({
-  href,
-  title,
-  desc,
-}: {
-  href: string;
-  title: string;
-  desc: string;
-}) => (
-  <Link
-    href={href}
-    className="rounded-2xl border border-gray-200 bg-white p-5 hover:bg-gray-50 transition"
-  >
-    <div className="text-sm font-semibold text-gray-900">{title}</div>
-    <div className="mt-1 text-sm text-gray-700">{desc}</div>
-  </Link>
-);
+export const metadata = {
+  title: "Vireoka Intelligence",
+  description:
+    "The Operating System for Autonomous Digital Workers — starting with Kairo, the Digital Infrastructure Worker.",
+};
 
-export default function IntelligenceOverview() {
+export default function IntelligencePage() {
   return (
-    <main className="mx-auto max-w-6xl px-6 py-16 space-y-12">
-      <section className="space-y-5">
-        <h1 className="text-4xl font-bold text-vireoka-indigo">
+    <main className="mx-auto max-w-5xl px-4 sm:px-6 py-12">
+      <header className="max-w-3xl">
+        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-neutral-900">
           Vireoka Intelligence
         </h1>
-
-        <p className="text-lg text-gray-700">
-          Vireoka builds governance-native agentic infrastructure: digital employees that
-          operate within defined authority, policy constraints, and audit-native execution.
-          This is not generic AI tooling—this is runtime governance for delegation.
+        <p className="mt-4 text-base sm:text-lg leading-7 text-neutral-700">
+          Vireoka is building the <span className="font-semibold text-neutral-900">Operating System for Autonomous Digital Workers</span>.
+          These workers don’t just “assist” — they take responsibility for defined operational outcomes, while remaining policy-bound,
+          auditable, and controllable by humans.
         </p>
 
-        <CTABar
-          primaryHref="/intelligence/portal"
-          primaryLabel="Open Portal (if approved)"
-          secondaryHref="/intelligence/request-access"
-          secondaryLabel="Request Access"
-        />
+        <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm">
+          <div className="text-xs font-semibold tracking-wide text-neutral-500">The first production role</div>
+          <h2 className="mt-2 text-lg font-semibold text-neutral-900">Kairo — Digital Infrastructure Worker</h2>
+          <p className="mt-2 text-sm leading-6 text-neutral-700">
+            Kairo operates AI infrastructure in real environments: it monitors GPU workloads, flags waste and reliability risks,
+            and (in progressive rollout) executes safe, policy-bound optimizations with full decision traceability.
+          </p>
+          <p className="mt-3 text-sm leading-6 text-neutral-700">
+            Governance is not a separate product — it’s the mandatory trait of digital workers:{" "}
+            <span className="font-semibold text-neutral-900">
+              if humans must follow policies, digital workers must too.
+            </span>
+          </p>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
+          <h3 className="text-sm font-semibold text-neutral-900">For external collaborators</h3>
+          <p className="mt-2 text-sm leading-6 text-neutral-700">
+            The roles below are for people outside the company who want to help Vireoka reach market with confidence.
+            You might fit one role today and a different one later — pick the closest lane and we’ll route you.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              className="rounded-xl !bg-vireoka-indigo px-4 py-2 text-sm font-semibold !text-white shadow-sm hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-vireoka-indigo/40"
+              href="/intelligence/request-access"
+            >
+              Request access →
+            </Link>
+            <Link
+              className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
+              href="/intelligence/roles"
+            >
+              Explore stakeholder roles
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <section className="mt-10 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="text-xs font-semibold tracking-wide text-neutral-500">NDA + verification</div>
+          <h3 className="mt-2 text-lg font-semibold text-neutral-900">Advisors</h3>
+          <p className="mt-2 text-sm leading-6 text-neutral-700">
+            Help sharpen positioning, guardrails, and go-to-market. Your input directly improves how Kairo earns trust in production
+            and how Vireoka expands into additional worker roles.
+          </p>
+          <div className="mt-4 text-sm font-semibold text-neutral-900">
+            <Link className="underline" href="/intelligence/portal/advisor">
+              If approved: Advisor workspace →
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="text-xs font-semibold tracking-wide text-neutral-500">NDA + verification</div>
+          <h3 className="mt-2 text-lg font-semibold text-neutral-900">Angels & early believers</h3>
+          <p className="mt-2 text-sm leading-6 text-neutral-700">
+            Follow progress with structured diligence: product demos, metrics snapshots, and staged materials that expand as trust builds.
+          </p>
+          <div className="mt-4 text-sm font-semibold text-neutral-900">
+            <Link className="underline" href="/intelligence/portal/angel">
+              If approved: Angel workspace →
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="text-xs font-semibold tracking-wide text-neutral-500">Verified collaborator</div>
+          <h3 className="mt-2 text-lg font-semibold text-neutral-900">Contributors</h3>
+          <p className="mt-2 text-sm leading-6 text-neutral-700">
+            Help build the ecosystem: architecture reviews, test cases, security UX feedback, and developer bounties. Earn reputation and
+            deeper access through high-quality contributions.
+          </p>
+          <div className="mt-4 text-sm font-semibold text-neutral-900">
+            <Link className="underline" href="/intelligence/portal/contributors">
+              If approved: Contributor hub →
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="text-xs font-semibold tracking-wide text-neutral-500">By invitation</div>
+          <h3 className="mt-2 text-lg font-semibold text-neutral-900">Partners</h3>
+          <p className="mt-2 text-sm leading-6 text-neutral-700">
+            Integrations, pilot deployments, and joint validation. Ideal for teams that want to ship measurable infrastructure outcomes
+            while keeping policy controls intact.
+          </p>
+          <div className="mt-4 text-sm font-semibold text-neutral-900">
+            <Link className="underline" href="/intelligence/portal/partner">
+              If approved: Partner workspace →
+            </Link>
+          </div>
+        </div>
       </section>
 
-      <ArchitectureDiagram />
-
-      <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900">Digital Employees</h2>
-        <p className="text-gray-700">
-          We deploy domain-specialized agents as digital employees, governed by a shared runtime:
-          authority envelopes, pre-execution enforcement, escalation logic, and immutable audit.
-        </p>
-
-        <ul className="list-disc pl-6 text-gray-700 space-y-2">
-          <li><strong>Agent Kairo</strong> — Infrastructure orchestration</li>
-          <li><strong>Agent Angelo</strong> — Design systems management</li>
-          <li><strong>Agent Cody</strong> — Code quality & architecture governance</li>
-          <li><strong>Agent Vire</strong> — Website development and delivery</li>
-          <li><strong>Agent Viral</strong> — Marketing systems and demand orchestration</li>
-          <li><strong>Agent Stable</strong> — StableStack proving module (policy-constrained capital delegation)</li>
+      <section className="mt-10 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-neutral-900">Why act now</h2>
+        <ul className="mt-3 space-y-2 text-sm leading-6 text-neutral-700">
+          <li>
+            <span className="font-semibold text-neutral-900">AI infrastructure spend is exploding</span> — GPU waste and operational
+            firefighting are becoming default.
+          </li>
+          <li>
+            <span className="font-semibold text-neutral-900">Digital workers will become a new labor layer</span> — early proof defines the
+            category leaders.
+          </li>
+          <li>
+            <span className="font-semibold text-neutral-900">The best collaborators get compounding leverage</span> — early access is not
+            just information; it’s influence on how the system is built.
+          </li>
         </ul>
-
-        <div className="pt-2">
-          <Link
-            href="/intelligence/stablestack"
-            className="text-sm font-semibold text-vireoka-indigo hover:underline"
-          >
-            Explore StableStack proving module →
-          </Link>
-        </div>
-      </section>
-
-      <section className="space-y-5">
-        <h2 className="text-2xl font-semibold text-gray-900">Choose your role</h2>
-
-        <p className="text-gray-700">
-          These pages are written for <strong>external stakeholders</strong> we’re actively engaging—advisors,
-          angels, VCs, partners, and contributors. You may fit one (or more) of these roles.
-          Pick the lens that matches you, and you’ll see how you can help Vireoka reach the market with confidence.
-        </p>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <RoleLink
-            href="/intelligence/advisors"
-            title="Advisors"
-            desc="Shape governance primitives, deployment models, and category standards. Be a structural partner—not a name on a slide."
-          />
-          <RoleLink
-            href="/intelligence/angels"
-            title="Angel Investors"
-            desc="Early conviction in governed digital employees. Help accelerate credibility, introductions, and early pilots."
-          />
-          <RoleLink
-            href="/intelligence/vc"
-            title="VCs"
-            desc="Infrastructure thesis, expansion path, and control-plane economics. Evaluate the runtime + proof modules."
-          />
-          <RoleLink
-            href="/intelligence/partners"
-            title="Partners"
-            desc="Integrate governance into platforms, workflows, and agent ecosystems. Co-build modules and distribution pathways."
-          />
-          <RoleLink
-            href="/intelligence/contributors"
-            title="Contributors"
-            desc="Help build the technical and research layer: policy models, audit systems, orchestration patterns, and agent templates."
-          />
-          <RoleLink
-            href="/intelligence/request-access"
-            title="Request Portal Access"
-            desc="Get access to deeper material: agent catalog, governance modules, videos, demos, and the data room."
-          />
-        </div>
-
-        <div className="text-sm text-gray-600">
-          Not sure where you fit? Start with{" "}
-          <Link href="/intelligence/vc" className="font-semibold text-vireoka-indigo hover:underline">
-            VC
-          </Link>{" "}
-          for the highest-level thesis, or{" "}
-          <Link href="/intelligence/advisors" className="font-semibold text-vireoka-indigo hover:underline">
-            Advisors
-          </Link>{" "}
-          for the architecture lens.
-        </div>
       </section>
     </main>
   );
